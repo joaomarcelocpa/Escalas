@@ -57,7 +57,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:DiaViewModel">
-                    <Border Classes="dia" Classes.fechado="{Binding Fechado}" DragDrop.AllowDrop="True">
+                    <Border Classes="dia" Classes.fechado="{Binding Fechado}" Classes.hoje="{Binding Hoje}" DragDrop.AllowDrop="True">
                         <DockPanel>
                             <!-- Cabeçalho do dia -->
                             <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="0,0,0,8">
@@ -76,12 +76,13 @@
                                 <TextBlock Classes="secundario" Text="Fechado" IsVisible="{Binding Fechado}" />
                             </StackPanel>
 
-                            <!-- Disponíveis: origem para escalar e destino para remover -->
-                            <Border DockPanel.Dock="Bottom" Classes="disponiveis" Tag="disponiveis"
-                                    DragDrop.AllowDrop="True" MaxHeight="150">
-                                <DockPanel>
-                                    <TextBlock DockPanel.Dock="Top" Classes="secundario" Text="{Binding TextoDisponiveis}" />
-                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <!-- Folga: quem não está escalado no dia. Recolhida por padrão; também é destino para remover do dia -->
+                            <Border DockPanel.Dock="Bottom" Classes="disponiveis" Tag="disponiveis" DragDrop.AllowDrop="True">
+                                <Expander IsExpanded="False" Padding="0" HorizontalAlignment="Stretch">
+                                    <Expander.Header>
+                                        <TextBlock Classes="secundario" Text="{Binding TextoDisponiveis}" />
+                                    </Expander.Header>
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="150">
                                         <ItemsControl ItemsSource="{Binding Disponiveis}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:FuncionarioItem">
@@ -98,41 +99,27 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </ScrollViewer>
-                                </DockPanel>
+                                </Expander>
                             </Border>
 
-                            <!-- Escalados por setor -->
+                            <!-- Escalados no dia (lista única; o setor aparece embaixo do nome) -->
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding Setores}">
+                                <ItemsControl ItemsSource="{Binding Escalados}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:SetorDiaViewModel">
-                                            <StackPanel Margin="0,0,0,8" Spacing="2">
-                                                <Grid ColumnDefinitions="*,Auto">
-                                                    <TextBlock Classes="setor" Classes.abaixo="{Binding AbaixoDoMinimo}"
-                                                               Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Grid.Column="1" Classes="setor" Classes.abaixo="{Binding AbaixoDoMinimo}"
-                                                               Text="{Binding Contagem}" />
+                                        <DataTemplate x:DataType="vm:FuncionarioItem">
+                                            <Border Classes="func">
+                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                    <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="2" Classes="link" Content="×" ToolTip.Tip="Remover deste dia"
+                                                            VerticalAlignment="Center"
+                                                            Command="{Binding $parent[UserControl].((vm:CalendarioViewModel)DataContext).RemoverEscaladoCommand}"
+                                                            CommandParameter="{Binding}" />
                                                 </Grid>
-                                                <ItemsControl ItemsSource="{Binding Escalados}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="vm:FuncionarioItem">
-                                                            <Border Classes="func">
-                                                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                                                    <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
-                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                                        <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
-                                                                        <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
-                                                                    </StackPanel>
-                                                                    <Button Grid.Column="2" Classes="link" Content="×" ToolTip.Tip="Remover deste dia"
-                                                                            VerticalAlignment="Center"
-                                                                            Command="{Binding $parent[UserControl].((vm:CalendarioViewModel)DataContext).RemoverEscaladoCommand}"
-                                                                            CommandParameter="{Binding}" />
-                                                                </Grid>
-                                                            </Border>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </StackPanel>
+                                            </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

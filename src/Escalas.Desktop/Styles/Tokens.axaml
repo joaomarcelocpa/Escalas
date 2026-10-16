@@ -14,6 +14,7 @@
             <Color x:Key="TextoSecundarioCor">#6B655C</Color>
             <!-- Única cor de destaque -->
             <Color x:Key="DestaqueCor">#0F766E</Color>
+            <Color x:Key="HojeFundoCor">#E6F1EF</Color>
             <Color x:Key="DestaqueTextoCor">#FFFFFF</Color>
             <!-- Cores funcionais -->
             <Color x:Key="AlertaMinimoCor">#C0392B</Color>
@@ -26,6 +27,7 @@
             <SolidColorBrush x:Key="BordaBrush" Color="{DynamicResource BordaCor}" />
             <SolidColorBrush x:Key="TextoBrush" Color="{DynamicResource TextoCor}" />
             <SolidColorBrush x:Key="TextoSecundarioBrush" Color="{DynamicResource TextoSecundarioCor}" />
+            <SolidColorBrush x:Key="HojeFundoBrush" Color="{DynamicResource HojeFundoCor}" />
             <SolidColorBrush x:Key="DestaqueBrush" Color="{DynamicResource DestaqueCor}" />
             <SolidColorBrush x:Key="DestaqueTextoBrush" Color="{DynamicResource DestaqueTextoCor}" />
             <SolidColorBrush x:Key="AlertaMinimoBrush" Color="{DynamicResource AlertaMinimoCor}" />

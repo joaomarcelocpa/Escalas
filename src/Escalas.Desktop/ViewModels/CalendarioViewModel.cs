@@ -11,16 +11,6 @@ namespace Escalas.Desktop.ViewModels;
 /// <summary>Funcionário exibido em um dia. <see cref="Origem"/> é nulo quando vem da lista de disponíveis.</summary>
 public record FuncionarioItem(int Id, string Nome, string? Detalhe, DateOnly? Origem, byte[]? Foto = null);
 
-public class SetorDiaViewModel(SetorDiaDto dto, DateOnly data)
-{
-    public string Nome { get; } = dto.Nome;
-    public string Contagem { get; } = $"{dto.Escalados.Count}";
-    // Mínimo por setor desativado por enquanto (escala livre); a regra segue no Domain.
-    public bool AbaixoDoMinimo => false;
-    public IReadOnlyList<FuncionarioItem> Escalados { get; } =
-        dto.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, dto.Nome, data, f.Foto)).ToList();
-}
-
 /// <summary>Opção do filtro de setor; <see cref="Id"/> nulo significa todos os setores.</summary>
 public record SetorFiltro(int? Id, string Nome);
 
@@ -36,9 +26,12 @@ public class DiaViewModel
         NomeFeriado = dto.NomeFeriado;
         Fechado = dto.Fechado;
         TextoFechar = dto.Fechado ? "Reabrir" : "Fechar";
-        Setores = dto.Setores.Where(s => setorId is null || s.SetorId == setorId).Select(s => new SetorDiaViewModel(s, dto.Data)).ToList();
+        Escalados = dto.Setores.Where(s => setorId is null || s.SetorId == setorId)
+            .SelectMany(s => s.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, s.Nome, dto.Data, f.Foto)))
+            .OrderBy(f => f.Nome).ToList();
+        Hoje = dto.Data == DateOnly.FromDateTime(DateTime.Today);
         Disponiveis = dto.Disponiveis.Where(f => setorId is null || f.SetorId == setorId).Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, null, f.Foto)).ToList();
-        TextoDisponiveis = $"Disponíveis ({Disponiveis.Count})";
+        TextoDisponiveis = $"Folga ({Disponiveis.Count})";
     }
 
     public DateOnly Data { get; }
@@ -48,7 +41,8 @@ public class DiaViewModel
     public bool TemFeriado => NomeFeriado is not null;
     public bool Fechado { get; }
     public string TextoFechar { get; }
-    public IReadOnlyList<SetorDiaViewModel> Setores { get; }
+    public IReadOnlyList<FuncionarioItem> Escalados { get; }
+    public bool Hoje { get; }
     public IReadOnlyList<FuncionarioItem> Disponiveis { get; }
     public string TextoDisponiveis { get; }
 }
@@ -176,7 +170,7 @@ public partial class CalendarioViewModel : ViewModelBase
     private static string Texto(DateOnly data) => data.ToString("ddd dd/MM", PtBr);
 
     private string NomeDe(int funcionarioId) =>
-        Dias.SelectMany(d => d.Setores.SelectMany(s => s.Escalados).Concat(d.Disponiveis))
+        Dias.SelectMany(d => d.Escalados.Concat(d.Disponiveis))
             .FirstOrDefault(f => f.Id == funcionarioId)?.Nome ?? "o funcionário";
 
     private async Task<bool> Confirmar(string titulo, string mensagem, string textoConfirmar)

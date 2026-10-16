@@ -15,6 +15,16 @@
         <Setter Property="Foreground" Value="{DynamicResource DiaFechadoBrush}" />
     </Style>
 
+    <!-- Hoje: fundo com a cor de destaque suave e número na cor de destaque -->
+    <Style Selector="Border.dia.hoje">
+        <Setter Property="Background" Value="{DynamicResource HojeFundoBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
+        <Setter Property="BorderThickness" Value="1,2,1,1" />
+    </Style>
+    <Style Selector="Border.dia.hoje TextBlock.diaNumero">
+        <Setter Property="Foreground" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+
     <Style Selector="TextBlock.diaNumero">
         <Setter Property="FontFamily" Value="{DynamicResource FonteTitulo}" />
         <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoTitulo}" />
