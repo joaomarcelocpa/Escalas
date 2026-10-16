@@ -1,0 +1,65 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Listas e formulários compactos dos cadastros. Apenas tokens de Tokens.axaml. -->
+
+    <Style Selector="TextBlock.rotulo">
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoPequeno}" />
+        <Setter Property="Margin" Value="0,8,0,4" />
+    </Style>
+
+    <Style Selector="StackPanel.formulario">
+        <Setter Property="Spacing" Value="0" />
+    </Style>
+
+    <Style Selector="StackPanel.formulario TextBox, StackPanel.formulario ComboBox, StackPanel.formulario NumericUpDown">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="MinHeight" Value="30" />
+    </Style>
+
+    <Style Selector="StackPanel.acoes">
+        <Setter Property="Orientation" Value="Horizontal" />
+        <Setter Property="Spacing" Value="8" />
+        <Setter Property="Margin" Value="0,16,0,0" />
+    </Style>
+
+    <Style Selector="Button.secundario">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="Padding" Value="12,6" />
+    </Style>
+
+    <Style Selector="ComboBox.filtro">
+        <Setter Property="MinWidth" Value="200" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+    </Style>
+
+    <Style Selector="Border.lista">
+        <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+    </Style>
+
+    <Style Selector="ListBox.cadastro">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.cadastro ListBoxItem">
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <!-- Mensagem de erro de validação: sem vermelho (reservado a "abaixo do mínimo") -->
+    <Style Selector="Border.mensagem">
+        <Setter Property="Background" Value="{DynamicResource SuperficieSutilBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="BorderThickness" Value="2,0,0,0" />
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="Margin" Value="0,16,0,0" />
+    </Style>
+</Styles>

@@ -19,5 +19,6 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Escalas.Desktop/Styles/Estilos.axaml" />
+        <StyleInclude Source="avares://Escalas.Desktop/Styles/Formularios.axaml" />
     </Application.Styles>
 </Application>
