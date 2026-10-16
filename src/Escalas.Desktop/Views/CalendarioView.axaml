@@ -1,0 +1,121 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Escalas.Desktop.ViewModels"
+             xmlns:app="using:Escalas.Application.Calendario"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+             x:Class="Escalas.Desktop.Views.CalendarioView"
+             x:DataType="vm:CalendarioViewModel">
+
+    <Design.DataContext>
+        <vm:CalendarioViewModel />
+    </Design.DataContext>
+
+    <DockPanel>
+        <!-- Barra superior: filial e navegação de semana -->
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{DynamicResource Espaco2}">
+                <TextBlock Classes="titulo" Text="Calendário" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding Filiais}" SelectedItem="{Binding FilialSelecionada}"
+                          MinWidth="180" VerticalAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="app:FilialResumo">
+                            <TextBlock Text="{Binding Nome}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <TextBlock Grid.Column="1" Classes="secundario" Text="{Binding Mensagem}"
+                       Foreground="{DynamicResource AlertaMinimoBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource Espaco1}">
+                <Button Classes="barra" Content="‹" Command="{Binding SemanaAnteriorCommand}" />
+                <Button Classes="barra" Content="Hoje" Command="{Binding IrParaHojeCommand}" />
+                <TextBlock Text="{Binding TituloSemana}" VerticalAlignment="Center" Margin="8,0" />
+                <Button Classes="barra" Content="›" Command="{Binding ProximaSemanaCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock DockPanel.Dock="Top" Classes="secundario" IsVisible="{Binding SemFiliais}"
+                   Text="Nenhuma filial cadastrada. Cadastre uma filial para montar a escala." />
+
+        <ItemsControl ItemsSource="{Binding Dias}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DiaViewModel">
+                    <Border Classes="dia" Classes.fechado="{Binding Fechado}" DragDrop.AllowDrop="True">
+                        <DockPanel>
+                            <!-- Cabeçalho do dia -->
+                            <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="0,0,0,8">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Grid.Column="0" Classes="diaNumero" Text="{Binding Numero}" />
+                                    <TextBlock Grid.Column="1" Classes="secundario" Text="{Binding DiaSemana}"
+                                               Margin="6,0,0,0" VerticalAlignment="Center" />
+                                    <Button Grid.Column="2" Classes="link" Content="{Binding TextoFechar}"
+                                            Command="{Binding $parent[UserControl].((vm:CalendarioViewModel)DataContext).AlternarDiaCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding TemFeriado}">
+                                    <Ellipse Classes="feriadoPonto" />
+                                    <TextBlock Classes="feriado" Text="{Binding NomeFeriado}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <TextBlock Classes="secundario" Text="Fechado" IsVisible="{Binding Fechado}" />
+                            </StackPanel>
+
+                            <!-- Disponíveis: origem para escalar e destino para remover -->
+                            <Border DockPanel.Dock="Bottom" Classes="disponiveis" Tag="disponiveis"
+                                    DragDrop.AllowDrop="True" MaxHeight="150">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Classes="secundario" Text="{Binding TextoDisponiveis}" />
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding Disponiveis}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:FuncionarioItem">
+                                                    <Border Classes="func disponivel">
+                                                        <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Escalados por setor -->
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding Setores}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SetorDiaViewModel">
+                                            <StackPanel Margin="0,0,0,8" Spacing="2">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Classes="setor" Classes.abaixo="{Binding AbaixoDoMinimo}"
+                                                               Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Grid.Column="1" Classes="setor" Classes.abaixo="{Binding AbaixoDoMinimo}"
+                                                               Text="{Binding Contagem}" />
+                                                </Grid>
+                                                <ItemsControl ItemsSource="{Binding Escalados}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:FuncionarioItem">
+                                                            <Border Classes="func">
+                                                                <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </DockPanel>
+</UserControl>

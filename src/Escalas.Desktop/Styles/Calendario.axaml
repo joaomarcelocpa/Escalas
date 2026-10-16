@@ -1,0 +1,82 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style Selector="Border.dia">
+        <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingEspaco2}" />
+        <Setter Property="Margin" Value="0,0,-1,0" />
+    </Style>
+    <Style Selector="Border.dia.fechado">
+        <Setter Property="Background" Value="{DynamicResource SuperficieSutilBrush}" />
+    </Style>
+    <Style Selector="Border.dia.fechado TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource DiaFechadoBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.diaNumero">
+        <Setter Property="FontFamily" Value="{DynamicResource FonteTitulo}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoTitulo}" />
+    </Style>
+
+    <!-- Feriado: indicador sutil, sem bloco chamativo -->
+    <Style Selector="Ellipse.feriadoPonto">
+        <Setter Property="Width" Value="5" />
+        <Setter Property="Height" Value="5" />
+        <Setter Property="Fill" Value="{DynamicResource FeriadoBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.feriado">
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoPequeno}" />
+    </Style>
+
+    <!-- Setor: vermelho somente quando abaixo do mínimo -->
+    <Style Selector="TextBlock.setor">
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoPequeno}" />
+    </Style>
+    <Style Selector="TextBlock.setor.abaixo">
+        <Setter Property="Foreground" Value="{DynamicResource AlertaMinimoBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Border.func">
+        <Setter Property="Background" Value="{DynamicResource SuperficieSutilBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="Margin" Value="0,0,0,2" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Border.func.disponivel">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.func:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+
+    <Style Selector="Border.disponiveis">
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="0,8,0,0" />
+    </Style>
+
+    <Style Selector="Button.link">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoPequeno}" />
+        <Setter Property="Padding" Value="4,0" />
+    </Style>
+
+    <Style Selector="Button.barra">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="Padding" Value="10,4" />
+    </Style>
+</Styles>
