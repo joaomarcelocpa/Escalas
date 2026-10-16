@@ -28,8 +28,11 @@ public partial class AvatarFuncionario : UserControl
 
     private void AtualizarForma()
     {
-        Moldura.CornerRadius = new CornerRadius(Math.Min(Width, Height) / 2);
-        Iniciais.FontSize = Math.Max(8, Math.Min(Width, Height) * 0.4);
+        // Width e Height chegam em momentos diferentes; enquanto um for NaN, não há o que calcular.
+        var lado = Math.Min(Width, Height);
+        if (double.IsNaN(lado) || lado <= 0) return;
+        Moldura.CornerRadius = new CornerRadius(lado / 2);
+        Iniciais.FontSize = Math.Max(8, lado * 0.4);
     }
 
     private void AtualizarIniciais()

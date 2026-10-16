@@ -33,7 +33,7 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
         {
             using var reduzida = Bitmap.DecodeToWidth(imagem, 192, BitmapInterpolationMode.HighQuality);
             using var saida = new MemoryStream();
-            reduzida.Save(saida);
+            reduzida.Save(saida, new PngBitmapEncoderOptions());
             Foto = saida.ToArray();
         }
         catch
