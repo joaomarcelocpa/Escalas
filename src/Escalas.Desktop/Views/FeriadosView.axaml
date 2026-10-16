@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Escalas.Desktop.ViewModels"
+             xmlns:fer="using:Escalas.Application.Feriados"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="Escalas.Desktop.Views.FeriadosView"
+             x:DataType="vm:FeriadosViewModel">
+
+    <Design.DataContext>
+        <vm:FeriadosViewModel />
+    </Design.DataContext>
+
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="{DynamicResource Espaco3}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="discreto" Content="Atualizar nacionais"
+                        Command="{Binding SincronizarCommand}" IsEnabled="{Binding !Ocupado}"
+                        ToolTip.Tip="Baixa novamente os feriados nacionais do ano (BrasilAPI)" />
+                <TextBlock Classes="titulo" Text="Feriados" />
+            </DockPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Espaco2}">
+                <ComboBox ItemsSource="{Binding Filiais}" SelectedItem="{Binding FilialSelecionada}"
+                          MinWidth="220" PlaceholderText="Filial">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="fer:FilialResumo">
+                            <TextBlock>
+                                <Run Text="{Binding Nome}" />
+                                <Run Classes="secundario" Text="{Binding Cidade, StringFormat='  {0}'}" />
+                                <Run Classes="secundario" Text="{Binding UF, StringFormat='/{0}'}" />
+                            </TextBlock>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Classes="discreto" Content="‹" Command="{Binding AnoAnteriorCommand}" />
+                <TextBlock VerticalAlignment="Center" Text="{Binding Ano}" MinWidth="40" TextAlignment="Center" />
+                <Button Classes="discreto" Content="›" Command="{Binding AnoSeguinteCommand}" />
+            </StackPanel>
+
+            <Border Classes="painel">
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Espaco2}">
+                    <TextBox Text="{Binding NovaData}" PlaceholderText="dd/mm" Width="80" />
+                    <ComboBox ItemsSource="{Binding Tipos}" SelectedItem="{Binding NovoTipo}" Width="120" />
+                    <TextBox Text="{Binding NovoNome}" PlaceholderText="Nome do feriado" Width="260" />
+                    <Button Classes="destaque" Content="Adicionar" Command="{Binding AdicionarCommand}"
+                            IsEnabled="{Binding FilialSelecionada, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Classes="secundario" Text="{Binding Mensagem}" />
+        </StackPanel>
+
+        <ScrollViewer Margin="0,12,0,0">
+            <ItemsControl ItemsSource="{Binding Linhas}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FeriadoLinha">
+                        <Border Classes="linha-feriado">
+                            <Grid ColumnDefinitions="110,*,100,Auto">
+                                <TextBlock Grid.Column="0" Classes="feriado-data" Text="{Binding Data}" />
+                                <TextBlock Grid.Column="1" Text="{Binding Nome}" />
+                                <TextBlock Grid.Column="2" Classes="secundario" Text="{Binding Escopo}" VerticalAlignment="Center" />
+                                <Button Grid.Column="3" Classes="discreto" Content="Remover"
+                                        IsVisible="{Binding Removivel}"
+                                        Command="{Binding $parent[UserControl].((vm:FeriadosViewModel)DataContext).RemoverCommand}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

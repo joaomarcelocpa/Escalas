@@ -1,0 +1,22 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style Selector="Button.discreto">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoPequeno}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="Padding" Value="8,4" />
+    </Style>
+
+    <Style Selector="Border.linha-feriado">
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="8,6" />
+    </Style>
+
+    <!-- Indicador sutil: a data do feriado leva a cor funcional de feriado, sem blocos coloridos -->
+    <Style Selector="TextBlock.feriado-data">
+        <Setter Property="Foreground" Value="{DynamicResource FeriadoBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+</Styles>
