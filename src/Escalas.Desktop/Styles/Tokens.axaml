@@ -1,0 +1,60 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Tokens de design. Telas usam apenas {DynamicResource ...}, nunca valores soltos.
+         Cores ficam em ThemeDictionaries para permitir tema escuro depois. -->
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <!-- Neutros levemente quentes -->
+            <Color x:Key="SuperficieCor">#FAF8F5</Color>
+            <Color x:Key="SuperficieElevadaCor">#FFFFFF</Color>
+            <Color x:Key="SuperficieSutilCor">#F2EFEA</Color>
+            <Color x:Key="BordaCor">#E2DDD5</Color>
+            <Color x:Key="TextoCor">#1F1C18</Color>
+            <Color x:Key="TextoSecundarioCor">#6B655C</Color>
+            <!-- Única cor de destaque -->
+            <Color x:Key="DestaqueCor">#0F766E</Color>
+            <Color x:Key="DestaqueTextoCor">#FFFFFF</Color>
+            <!-- Cores funcionais -->
+            <Color x:Key="AlertaMinimoCor">#C0392B</Color>
+            <Color x:Key="DiaFechadoCor">#9A948A</Color>
+            <Color x:Key="FeriadoCor">#B7791F</Color>
+
+            <SolidColorBrush x:Key="SuperficieBrush" Color="{DynamicResource SuperficieCor}" />
+            <SolidColorBrush x:Key="SuperficieElevadaBrush" Color="{DynamicResource SuperficieElevadaCor}" />
+            <SolidColorBrush x:Key="SuperficieSutilBrush" Color="{DynamicResource SuperficieSutilCor}" />
+            <SolidColorBrush x:Key="BordaBrush" Color="{DynamicResource BordaCor}" />
+            <SolidColorBrush x:Key="TextoBrush" Color="{DynamicResource TextoCor}" />
+            <SolidColorBrush x:Key="TextoSecundarioBrush" Color="{DynamicResource TextoSecundarioCor}" />
+            <SolidColorBrush x:Key="DestaqueBrush" Color="{DynamicResource DestaqueCor}" />
+            <SolidColorBrush x:Key="DestaqueTextoBrush" Color="{DynamicResource DestaqueTextoCor}" />
+            <SolidColorBrush x:Key="AlertaMinimoBrush" Color="{DynamicResource AlertaMinimoCor}" />
+            <SolidColorBrush x:Key="DiaFechadoBrush" Color="{DynamicResource DiaFechadoCor}" />
+            <SolidColorBrush x:Key="FeriadoBrush" Color="{DynamicResource FeriadoCor}" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Tipografia: títulos com personalidade + corpo neutro, ambos embutidos -->
+    <FontFamily x:Key="FonteTitulo">avares://Escalas.Desktop/Assets/Fonts#Instrument Serif</FontFamily>
+    <FontFamily x:Key="FonteCorpo">fonts:Inter#Inter</FontFamily>
+
+    <x:Double x:Key="TamanhoTextoPequeno">12</x:Double>
+    <x:Double x:Key="TamanhoTextoCorpo">13</x:Double>
+    <x:Double x:Key="TamanhoTextoTitulo">24</x:Double>
+
+    <!-- Escala de espaçamento: 4, 8, 12, 16, 24 -->
+    <x:Double x:Key="Espaco1">4</x:Double>
+    <x:Double x:Key="Espaco2">8</x:Double>
+    <x:Double x:Key="Espaco3">12</x:Double>
+    <x:Double x:Key="Espaco4">16</x:Double>
+    <x:Double x:Key="Espaco6">24</x:Double>
+
+    <Thickness x:Key="PaddingEspaco2">8</Thickness>
+    <Thickness x:Key="PaddingEspaco3">12</Thickness>
+    <Thickness x:Key="PaddingEspaco4">16</Thickness>
+    <Thickness x:Key="PaddingEspaco6">24</Thickness>
+
+    <!-- Forma -->
+    <CornerRadius x:Key="Raio">3</CornerRadius>
+    <Thickness x:Key="EspessuraBorda">1</Thickness>
+</ResourceDictionary>

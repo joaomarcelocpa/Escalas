@@ -1,0 +1,34 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{DynamicResource SuperficieBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoBrush}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FonteCorpo}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoCorpo}" />
+    </Style>
+
+    <Style Selector="TextBlock.titulo">
+        <Setter Property="FontFamily" Value="{DynamicResource FonteTitulo}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoTitulo}" />
+    </Style>
+
+    <Style Selector="TextBlock.secundario">
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoPequeno}" />
+    </Style>
+
+    <Style Selector="Border.painel">
+        <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingEspaco4}" />
+    </Style>
+
+    <Style Selector="Button.destaque">
+        <Setter Property="Background" Value="{DynamicResource DestaqueBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DestaqueTextoBrush}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="Padding" Value="12,6" />
+    </Style>
+</Styles>
