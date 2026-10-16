@@ -23,12 +23,7 @@
                 <ListBox Classes="cadastro" ItemsSource="{Binding Itens}" SelectedItem="{Binding Selecionado}">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="ent:Setor">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="{Binding Nome}" />
-                                <TextBlock Grid.Column="1" Classes="secundario">
-                                    <Run Text="mín. " /><Run Text="{Binding MinimoFuncionarios}" />
-                                </TextBlock>
-                            </Grid>
+                            <TextBlock Text="{Binding Nome}" />
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -37,8 +32,6 @@
             <StackPanel Grid.Column="2" Classes="formulario">
                 <TextBlock Classes="rotulo" Text="Nome" Margin="0,0,0,4" />
                 <TextBox Text="{Binding Nome}" />
-                <TextBlock Classes="rotulo" Text="Mínimo de funcionários" />
-                <NumericUpDown Value="{Binding Minimo}" Minimum="0" Increment="1" FormatString="0" />
                 <StackPanel Classes="acoes">
                     <Button Classes="destaque" Content="Salvar" Command="{Binding SalvarCommand}" />
                     <Button Classes="secundario" Content="Excluir" Command="{Binding ExcluirCommand}" />

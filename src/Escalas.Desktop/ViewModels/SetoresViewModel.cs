@@ -18,7 +18,6 @@ public partial class SetoresViewModel : CadastroViewModelBase
     [ObservableProperty] public partial Filial? FilialSelecionada { get; set; }
     [ObservableProperty] public partial Setor? Selecionado { get; set; }
     [ObservableProperty] public partial string Nome { get; set; } = "";
-    [ObservableProperty] public partial decimal? Minimo { get; set; } = 0;
 
     public SetoresViewModel(IFilialService filiais, ISetorService servico)
     {
@@ -37,7 +36,6 @@ public partial class SetoresViewModel : CadastroViewModelBase
     {
         _id = value?.Id ?? 0;
         Nome = value?.Nome ?? "";
-        Minimo = value?.MinimoFuncionarios ?? 0;
     }
 
     private async Task CarregarAsync(int? selecionarId)
@@ -65,7 +63,6 @@ public partial class SetoresViewModel : CadastroViewModelBase
             Id = _id,
             FilialId = FilialSelecionada.Id,
             Nome = Nome,
-            MinimoFuncionarios = (int)(Minimo ?? 0),
         });
         await CarregarAsync(null);
         Novo();

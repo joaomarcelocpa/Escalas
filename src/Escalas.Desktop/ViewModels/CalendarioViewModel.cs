@@ -12,8 +12,9 @@ public record FuncionarioItem(int Id, string Nome, string? Detalhe, DateOnly? Or
 public class SetorDiaViewModel(SetorDiaDto dto, DateOnly data)
 {
     public string Nome { get; } = dto.Nome;
-    public string Contagem { get; } = dto.Minimo > 0 ? $"{dto.Escalados.Count}/{dto.Minimo}" : $"{dto.Escalados.Count}";
-    public bool AbaixoDoMinimo { get; } = dto.AbaixoDoMinimo;
+    public string Contagem { get; } = $"{dto.Escalados.Count}";
+    // Mínimo por setor desativado por enquanto (escala livre); a regra segue no Domain.
+    public bool AbaixoDoMinimo => false;
     public IReadOnlyList<FuncionarioItem> Escalados { get; } =
         dto.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, null, data)).ToList();
 }
