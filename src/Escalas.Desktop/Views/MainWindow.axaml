@@ -24,7 +24,11 @@
                     <TextBlock Classes="secundario" Text="{Binding Subtitulo}" TextWrapping="Wrap" />
                 </StackPanel>
                 <!-- Ações de rodapé (ex.: exportar backup) entram aqui -->
-                <StackPanel DockPanel.Dock="Bottom" x:Name="RodapeMenu" Spacing="{DynamicResource Espaco1}" />
+                <StackPanel DockPanel.Dock="Bottom" x:Name="RodapeMenu" Spacing="{DynamicResource Espaco1}">
+                    <TextBlock Classes="secundario" Text="{Binding StatusBackup}" TextWrapping="Wrap"
+                               IsVisible="{Binding StatusBackup, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Button Classes="menu" Content="Exportar backup" Click="ExportarBackup_Click" />
+                </StackPanel>
                 <ItemsControl ItemsSource="{Binding Menu}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="nav:ItemNavegacao">
