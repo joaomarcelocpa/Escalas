@@ -74,7 +74,7 @@
                                     <Ellipse Classes="feriadoPonto" VerticalAlignment="Top" Margin="0,5,4,0" />
                                     <TextBlock Grid.Column="1" Classes="feriado" Text="{Binding NomeFeriado}" TextWrapping="Wrap" />
                                 </Grid>
-                                <TextBlock Classes="secundario" Text="Fechado" IsVisible="{Binding Fechado}" />
+                                <TextBlock Classes="secundario" Text="Fechado" Margin="0,6,0,0" IsVisible="{Binding Fechado}" />
                             </StackPanel>
 
                             <!-- Folga: quem não está escalado no dia. Recolhida por padrão; também é destino para remover do dia -->

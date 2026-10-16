@@ -64,7 +64,7 @@
                             <!-- Disponíveis: origem para alocar e destino para desalocar -->
                             <Border DockPanel.Dock="Bottom" Classes="disponiveis" Tag="disponiveis"
                                     DragDrop.AllowDrop="True">
-                                <Expander IsExpanded="True" Padding="0,8,0,0" HorizontalAlignment="Stretch">
+                                <Expander IsExpanded="False" Padding="0,8,0,0" HorizontalAlignment="Stretch">
                                     <Expander.Header>
                                         <TextBlock Classes="secundario" Text="{Binding TextoDisponiveis}" />
                                     </Expander.Header>
