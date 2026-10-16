@@ -207,18 +207,20 @@ public sealed class EscalaServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Feriado_MarcaStatusComNome_EFechadoPrevalece()
+    public async Task Feriado_VemFechadoPorPadraoComNome_ePodeSerReaberto()
     {
         _feriados.Itens.Add(new Feriado { Data = Quarta, Nome = "Dia Teste", Abrangencia = AbrangenciaFeriado.Nacional });
 
         var semana = await _servico.ObterSemanaAsync(1, Segunda);
-        Assert.Equal(StatusDia.Feriado, semana.Dias[2].Status);
-        Assert.Equal("Dia Teste", semana.Dias[2].NomeFeriado);
-
-        await _servico.DefinirDiaFechadoAsync(1, Quarta, true);
-        semana = await _servico.ObterSemanaAsync(1, Segunda);
         Assert.Equal(StatusDia.Fechado, semana.Dias[2].Status);
         Assert.Equal("Dia Teste", semana.Dias[2].NomeFeriado);
+        Assert.False((await _servico.EscalarAsync(1, Quarta)).Ok);
+
+        await _servico.DefinirDiaFechadoAsync(1, Quarta, false);
+        semana = await _servico.ObterSemanaAsync(1, Segunda);
+        Assert.Equal(StatusDia.Feriado, semana.Dias[2].Status);
+        Assert.Equal("Dia Teste", semana.Dias[2].NomeFeriado);
+        Assert.True((await _servico.EscalarAsync(1, Quarta)).Ok);
     }
 
     [Fact]

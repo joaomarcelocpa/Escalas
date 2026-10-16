@@ -47,8 +47,8 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         for (var i = 0; i < 7; i++)
         {
             var data = inicio.AddDays(i);
-            var fechado = definidos.TryGetValue(data, out var definido) ? definido : FechadoPorPadrao(data);
             var nomeFeriado = listaFeriados.Where(f => f.Data == data).Select(f => f.Nome).FirstOrDefault();
+            var fechado = definidos.TryGetValue(data, out var definido) ? definido : FechadoPorPadrao(data, nomeFeriado is not null);
             var status = fechado ? StatusDia.Fechado : nomeFeriado is not null ? StatusDia.Feriado : StatusDia.Normal;
 
             // Escalados do dia = modelo semanal ± exceções da data. Dia fechado não tem ninguém escalado.
@@ -171,16 +171,17 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         else if (linha is not null) db.Escalas.Remove(linha);
     }
 
-    /// <summary>Domingo vem fechado até que alguém o reabra explicitamente.</summary>
-    private static bool FechadoPorPadrao(DateOnly data) => data.DayOfWeek == DayOfWeek.Sunday;
+    /// <summary>Domingo e feriado vêm fechados até que alguém reabra o dia explicitamente.</summary>
+    private static bool FechadoPorPadrao(DateOnly data, bool feriado) => feriado || data.DayOfWeek == DayOfWeek.Sunday;
 
     /// <param name="origem">Quando informado, valida como movimentação.</param>
-    private static async Task<ResultadoRegra> ValidarAsync(
+    private async Task<ResultadoRegra> ValidarAsync(
         EscalasDbContext db, Funcionario func, DateOnly destino, DateOnly? origem, CancellationToken ct)
     {
         var definido = await db.DiasFilial.Where(d => d.FilialId == func.FilialId && d.Data == destino)
             .Select(d => (bool?)d.Fechado).FirstOrDefaultAsync(ct);
-        var fechado = definido ?? FechadoPorPadrao(destino);
+        var feriado = definido is null && (await feriados.ObterAsync(func.FilialId, destino, destino, ct)).Count > 0;
+        var fechado = definido ?? FechadoPorPadrao(destino, feriado);
         var jaEscalado = await EstaEscaladoAsync(db, func.Id, destino, ct);
         var escalavel = new FuncionarioEscalavel(func.Id, func.FilialId, func.Ativo);
 
