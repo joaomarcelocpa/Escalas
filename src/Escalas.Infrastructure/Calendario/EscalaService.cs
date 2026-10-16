@@ -9,11 +9,11 @@ namespace Escalas.Infrastructure.Calendario;
 
 public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriadoConsulta feriados) : IEscalaService
 {
-    public async Task<IReadOnlyList<FilialResumo>> ListarFiliaisAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<Escalas.Application.Calendario.FilialResumo>> ListarFiliaisAsync(CancellationToken ct = default)
     {
         await using var db = await factory.CreateDbContextAsync(ct);
         return await db.Filiais.AsNoTracking().OrderBy(f => f.Nome)
-            .Select(f => new FilialResumo(f.Id, f.Nome)).ToListAsync(ct);
+            .Select(f => new Escalas.Application.Calendario.FilialResumo(f.Id, f.Nome)).ToListAsync(ct);
     }
 
     public async Task<SemanaDto> ObterSemanaAsync(int filialId, DateOnly qualquerDiaDaSemana, CancellationToken ct = default)
