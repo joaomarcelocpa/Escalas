@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Escalas.Desktop.ViewModels"
+        xmlns:nav="using:Escalas.Desktop.Navegacao"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
@@ -15,20 +16,27 @@
     </Design.DataContext>
 
     <DockPanel>
-        <Border DockPanel.Dock="Top" Padding="{DynamicResource PaddingEspaco4}"
-                BorderBrush="{DynamicResource BordaBrush}" BorderThickness="0,0,0,1">
-            <StackPanel Spacing="{DynamicResource Espaco1}">
-                <TextBlock Classes="titulo" Text="{Binding Titulo}" />
-                <TextBlock Classes="secundario" Text="{Binding Subtitulo}" />
-            </StackPanel>
+        <Border DockPanel.Dock="Left" Width="200" Padding="{DynamicResource PaddingEspaco3}"
+                BorderBrush="{DynamicResource BordaBrush}" BorderThickness="0,0,1,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Spacing="{DynamicResource Espaco1}" Margin="0,0,0,24">
+                    <TextBlock Classes="titulo" Text="{Binding Titulo}" />
+                    <TextBlock Classes="secundario" Text="{Binding Subtitulo}" TextWrapping="Wrap" />
+                </StackPanel>
+                <!-- Ações de rodapé (ex.: exportar backup) entram aqui -->
+                <StackPanel DockPanel.Dock="Bottom" x:Name="RodapeMenu" Spacing="{DynamicResource Espaco1}" />
+                <ItemsControl ItemsSource="{Binding Menu}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="nav:ItemNavegacao">
+                            <Button Classes="menu" Content="{Binding Titulo}"
+                                    Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).NavegarCommand}"
+                                    CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
         </Border>
 
-        <Border Classes="painel" Margin="{DynamicResource PaddingEspaco4}"
-                VerticalAlignment="Top" HorizontalAlignment="Left">
-            <StackPanel Spacing="{DynamicResource Espaco2}">
-                <TextBlock Text="Fundação concluída." />
-                <TextBlock Classes="secundario" Text="Login e calendário semanal entram nas próximas fases." />
-            </StackPanel>
-        </Border>
+        <ContentControl Content="{Binding PaginaAtual}" Margin="{DynamicResource PaddingEspaco4}" />
     </DockPanel>
 </Window>
