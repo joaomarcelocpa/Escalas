@@ -54,7 +54,8 @@ public partial class FiliaisViewModel : CadastroViewModelBase
     private Task SalvarAsync() => ExecutarAsync(async () =>
     {
         var salva = await _servico.SalvarAsync(new Filial { Id = _id, Nome = Nome, Cidade = Cidade, UF = UF });
-        await CarregarAsync(salva.Id);
+        await CarregarAsync(null);
+        Novo();
     });
 
     [RelayCommand]

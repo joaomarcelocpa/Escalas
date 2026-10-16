@@ -67,7 +67,8 @@ public partial class SetoresViewModel : CadastroViewModelBase
             Nome = Nome,
             MinimoFuncionarios = (int)(Minimo ?? 0),
         });
-        await CarregarAsync(salvo.Id);
+        await CarregarAsync(null);
+        Novo();
     });
 
     [RelayCommand]

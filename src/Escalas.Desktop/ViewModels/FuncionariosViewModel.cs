@@ -79,7 +79,8 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
             SetorId = SetorSelecionado?.Id ?? 0,
             Ativo = Ativo,
         });
-        await CarregarAsync(salvo.Id);
+        await CarregarAsync(null);
+        Novo();
     });
 
     [RelayCommand]

@@ -18,11 +18,14 @@ public class SetorDiaViewModel(SetorDiaDto dto, DateOnly data)
         dto.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, null, data)).ToList();
 }
 
+/// <summary>Opção do filtro de setor; <see cref="Id"/> nulo significa todos os setores.</summary>
+public record SetorFiltro(int? Id, string Nome);
+
 public class DiaViewModel
 {
     private static readonly string[] DiasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-    public DiaViewModel(DiaDto dto)
+    public DiaViewModel(DiaDto dto, int? setorId = null)
     {
         Data = dto.Data;
         DiaSemana = DiasSemana[(int)dto.Data.DayOfWeek];
@@ -30,8 +33,8 @@ public class DiaViewModel
         NomeFeriado = dto.NomeFeriado;
         Fechado = dto.Fechado;
         TextoFechar = dto.Fechado ? "Reabrir" : "Fechar";
-        Setores = dto.Setores.Select(s => new SetorDiaViewModel(s, dto.Data)).ToList();
-        Disponiveis = dto.Disponiveis.Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, null)).ToList();
+        Setores = dto.Setores.Where(s => setorId is null || s.SetorId == setorId).Select(s => new SetorDiaViewModel(s, dto.Data)).ToList();
+        Disponiveis = dto.Disponiveis.Where(f => setorId is null || f.SetorId == setorId).Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, null)).ToList();
         TextoDisponiveis = $"Disponíveis ({Disponiveis.Count})";
     }
 
@@ -57,6 +60,13 @@ public partial class CalendarioViewModel : ViewModelBase
 
     public ObservableCollection<FilialResumo> Filiais { get; } = [];
     public ObservableCollection<DiaViewModel> Dias { get; } = [];
+    public ObservableCollection<SetorFiltro> Setores { get; } = [];
+
+    private static readonly SetorFiltro TodosSetores = new(null, "Todos os setores");
+    private bool _atualizandoSetores;
+
+    [ObservableProperty]
+    public partial SetorFiltro? SetorSelecionado { get; set; }
 
     [ObservableProperty]
     public partial FilialResumo? FilialSelecionada { get; set; }
@@ -80,7 +90,12 @@ public partial class CalendarioViewModel : ViewModelBase
         _ = CarregarAsync();
     }
 
-    partial void OnFilialSelecionadaChanged(FilialResumo? value) => _ = RecarregarAsync();
+    partial void OnFilialSelecionadaChanged(FilialResumo? value) => _ = RecarregarAsync(refazerSetores: true);
+
+    partial void OnSetorSelecionadoChanged(SetorFiltro? value)
+    {
+        if (!_atualizandoSetores) _ = RecarregarAsync();
+    }
 
     private async Task CarregarAsync()
     {
@@ -91,13 +106,23 @@ public partial class CalendarioViewModel : ViewModelBase
         FilialSelecionada = Filiais.FirstOrDefault();
     }
 
-    private async Task RecarregarAsync()
+    private async Task RecarregarAsync(bool refazerSetores = false)
     {
         Dias.Clear();
         if (_servico is null || FilialSelecionada is null) return;
 
         var semana = await _servico.ObterSemanaAsync(FilialSelecionada.Id, _inicioSemana);
-        foreach (var d in semana.Dias) Dias.Add(new DiaViewModel(d));
+        if (refazerSetores)
+        {
+            _atualizandoSetores = true;
+            Setores.Clear();
+            Setores.Add(TodosSetores);
+            foreach (var st in semana.Dias.FirstOrDefault()?.Setores ?? [])
+                Setores.Add(new SetorFiltro(st.SetorId, st.Nome));
+            SetorSelecionado = TodosSetores;
+            _atualizandoSetores = false;
+        }
+        foreach (var d in semana.Dias) Dias.Add(new DiaViewModel(d, SetorSelecionado?.Id));
     }
 
     private void AtualizarTitulo()

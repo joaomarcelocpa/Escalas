@@ -25,6 +25,14 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+                <ComboBox ItemsSource="{Binding Setores}" SelectedItem="{Binding SetorSelecionado}"
+                          MinWidth="160" VerticalAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SetorFiltro">
+                            <TextBlock Text="{Binding Nome}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
             </StackPanel>
             <TextBlock Grid.Column="1" Classes="secundario" Text="{Binding Mensagem}"
                        Foreground="{DynamicResource AlertaMinimoBrush}"
