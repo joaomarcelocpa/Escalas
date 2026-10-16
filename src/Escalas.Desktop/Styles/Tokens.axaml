@@ -6,21 +6,27 @@
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
             <!-- Neutros levemente quentes -->
-            <Color x:Key="SuperficieCor">#FAF8F5</Color>
+            <Color x:Key="SuperficieCor">#F3F6FB</Color>
             <Color x:Key="SuperficieElevadaCor">#FFFFFF</Color>
-            <Color x:Key="SuperficieSutilCor">#F2EFEA</Color>
-            <Color x:Key="BordaCor">#E2DDD5</Color>
-            <Color x:Key="TextoCor">#1F1C18</Color>
-            <Color x:Key="TextoSecundarioCor">#6B655C</Color>
+            <Color x:Key="SuperficieSutilCor">#E8EEF7</Color>
+            <Color x:Key="BordaCor">#D5DEEC</Color>
+            <Color x:Key="TextoCor">#0F1E36</Color>
+            <Color x:Key="TextoSecundarioCor">#5B6B85</Color>
             <!-- Única cor de destaque -->
-            <Color x:Key="DestaqueCor">#0F766E</Color>
-            <Color x:Key="HojeFundoCor">#E6F1EF</Color>
+            <Color x:Key="DestaqueCor">#1558B8</Color>
+            <Color x:Key="HojeFundoCor">#FFF4D1</Color>
+            <Color x:Key="MarcaProfundaCor">#0A3A86</Color>
+            <Color x:Key="AmareloCor">#FFB81C</Color>
+            <Color x:Key="MenuTextoCor">#CFDCF5</Color>
             <Color x:Key="DestaqueTextoCor">#FFFFFF</Color>
             <!-- Cores funcionais -->
-            <Color x:Key="AlertaMinimoCor">#C0392B</Color>
-            <Color x:Key="DiaFechadoCor">#9A948A</Color>
-            <Color x:Key="FeriadoCor">#B7791F</Color>
+            <Color x:Key="AlertaMinimoCor">#C62828</Color>
+            <Color x:Key="DiaFechadoCor">#8E9AB0</Color>
+            <Color x:Key="FeriadoCor">#E39B00</Color>
 
+            <SolidColorBrush x:Key="MarcaProfundaBrush" Color="{DynamicResource MarcaProfundaCor}" />
+            <SolidColorBrush x:Key="AmareloBrush" Color="{DynamicResource AmareloCor}" />
+            <SolidColorBrush x:Key="MenuTextoBrush" Color="{DynamicResource MenuTextoCor}" />
             <SolidColorBrush x:Key="SuperficieBrush" Color="{DynamicResource SuperficieCor}" />
             <SolidColorBrush x:Key="SuperficieElevadaBrush" Color="{DynamicResource SuperficieElevadaCor}" />
             <SolidColorBrush x:Key="SuperficieSutilBrush" Color="{DynamicResource SuperficieSutilCor}" />
@@ -37,12 +43,12 @@
     </ResourceDictionary.ThemeDictionaries>
 
     <!-- Tipografia: títulos com personalidade + corpo neutro, ambos embutidos -->
-    <FontFamily x:Key="FonteTitulo">avares://Escalas.Desktop/Assets/Fonts#Instrument Serif</FontFamily>
+    <FontFamily x:Key="FonteTitulo">fonts:Inter#Inter</FontFamily>
     <FontFamily x:Key="FonteCorpo">fonts:Inter#Inter</FontFamily>
 
     <x:Double x:Key="TamanhoTextoPequeno">12</x:Double>
     <x:Double x:Key="TamanhoTextoCorpo">13</x:Double>
-    <x:Double x:Key="TamanhoTextoTitulo">24</x:Double>
+    <x:Double x:Key="TamanhoTextoTitulo">26</x:Double>
 
     <!-- Escala de espaçamento: 4, 8, 12, 16, 24 -->
     <x:Double x:Key="Espaco1">4</x:Double>
@@ -57,6 +63,7 @@
     <Thickness x:Key="PaddingEspaco6">24</Thickness>
 
     <!-- Forma -->
-    <CornerRadius x:Key="Raio">3</CornerRadius>
+    <CornerRadius x:Key="Raio">8</CornerRadius>
+    <CornerRadius x:Key="RaioGrande">14</CornerRadius>
     <Thickness x:Key="EspessuraBorda">1</Thickness>
 </ResourceDictionary>

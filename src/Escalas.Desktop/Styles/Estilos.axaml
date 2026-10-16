@@ -10,6 +10,8 @@
     <Style Selector="TextBlock.titulo">
         <Setter Property="FontFamily" Value="{DynamicResource FonteTitulo}" />
         <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoTitulo}" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="LetterSpacing" Value="-0.5" />
     </Style>
 
     <Style Selector="TextBlock.secundario">
@@ -21,15 +23,40 @@
         <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
         <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RaioGrande}" />
         <Setter Property="Padding" Value="{DynamicResource PaddingEspaco4}" />
+        <Setter Property="BoxShadow" Value="0 2 12 0 #140F1E36" />
     </Style>
 
     <Style Selector="Button.destaque">
         <Setter Property="Background" Value="{DynamicResource DestaqueBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource DestaqueTextoBrush}" />
         <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
-        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.destaque:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource MarcaProfundaBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DestaqueTextoBrush}" />
+    </Style>
+
+    <!-- Barra lateral clara: a logo tem fundo branco, o azul fica só nos detalhes -->
+    <Style Selector="Border.barraLateral">
+        <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+    </Style>
+    <Style Selector="Border.barraLateral Button.menu">
+        <Setter Property="Padding" Value="12,9" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Border.barraLateral Button.menu:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HojeFundoBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+    <Style Selector="Border.barraLateral TextBlock.titulo">
+        <Setter Property="FontSize" Value="18" />
     </Style>
 
     <Style Selector="Button.menu">
@@ -38,7 +65,7 @@
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
-        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="Padding" Value="10,7" />
     </Style>
 
     <Style Selector="Border.avatar">
@@ -47,6 +74,7 @@
         <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
     </Style>
     <Style Selector="TextBlock.avatarIniciais">
-        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DestaqueBrush}" />
+        <Setter Property="FontWeight" Value="Bold" />
     </Style>
 </Styles>

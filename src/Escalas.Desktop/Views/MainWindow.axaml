@@ -16,13 +16,10 @@
     </Design.DataContext>
 
     <DockPanel>
-        <Border DockPanel.Dock="Left" Width="200" Padding="{DynamicResource PaddingEspaco3}"
-                BorderBrush="{DynamicResource BordaBrush}" BorderThickness="0,0,1,0">
+        <Border Classes="barraLateral" DockPanel.Dock="Left" Width="216" Padding="{DynamicResource PaddingEspaco4}">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Spacing="{DynamicResource Espaco1}" Margin="0,0,0,24">
-                    <TextBlock Classes="titulo" Text="{Binding Titulo}" />
-                    <TextBlock Classes="secundario" Text="{Binding Subtitulo}" TextWrapping="Wrap" />
-                </StackPanel>
+                <StackPanel DockPanel.Dock="Top" Spacing="{DynamicResource Espaco2}" Margin="0,0,0,28">
+                    <Image Source="avares://Escalas.Desktop/Assets/logo.png" Width="176" HorizontalAlignment="Left" RenderOptions.BitmapInterpolationMode="HighQuality" />                </StackPanel>
                 <!-- Ações de rodapé (ex.: exportar backup) entram aqui -->
                 <StackPanel DockPanel.Dock="Bottom" x:Name="RodapeMenu" Spacing="{DynamicResource Espaco1}">
                     <TextBlock Classes="secundario" Text="{Binding StatusBackup}" TextWrapping="Wrap"
@@ -41,6 +38,6 @@
             </DockPanel>
         </Border>
 
-        <ContentControl Content="{Binding PaginaAtual}" Margin="{DynamicResource PaddingEspaco4}" />
+        <ContentControl Content="{Binding PaginaAtual}" Margin="{DynamicResource PaddingEspaco6}" />
     </DockPanel>
 </Window>

@@ -50,7 +50,21 @@ public partial class AvatarFuncionario : UserControl
     {
         Imagem.Source = null;
         if (Foto is not { Length: > 0 } bytes) return;
-        try { Imagem.Source = new Bitmap(new MemoryStream(bytes)); }
+        Imagem.Source = ObterBitmap(bytes);
+    }
+
+    // Cache por conteúdo: trocar de semana recarrega os bytes do banco (arrays novos), mas a foto é a mesma.
+    // Decodificar em tamanho reduzido evita gastar a thread da tela com fotos grandes.
+    private static readonly Dictionary<string, Bitmap?> Cache = [];
+
+    private static Bitmap? ObterBitmap(byte[] bytes)
+    {
+        var chave = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(bytes));
+        if (Cache.TryGetValue(chave, out var existente)) return existente;
+        Bitmap? bitmap = null;
+        try { bitmap = Bitmap.DecodeToWidth(new MemoryStream(bytes), 96); }
         catch { /* foto corrompida: cai nas iniciais */ }
+        Cache[chave] = bitmap;
+        return bitmap;
     }
 }

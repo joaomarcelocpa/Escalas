@@ -15,7 +15,7 @@
     <Style Selector="StackPanel.formulario TextBox, StackPanel.formulario ComboBox, StackPanel.formulario NumericUpDown">
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
-        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="MinHeight" Value="36" />
     </Style>
 
     <Style Selector="StackPanel.acoes">
@@ -30,7 +30,8 @@
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
         <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
         <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
-        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <Style Selector="ComboBox.filtro">
@@ -42,7 +43,8 @@
         <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
         <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RaioGrande}" />
+        <Setter Property="BoxShadow" Value="0 2 12 0 #140F1E36" />
     </Style>
 
     <Style Selector="ListBox.cadastro">
@@ -57,9 +59,49 @@
     <!-- Mensagem de erro de validação: sem vermelho (reservado a "abaixo do mínimo") -->
     <Style Selector="Border.mensagem">
         <Setter Property="Background" Value="{DynamicResource SuperficieSutilBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource TextoSecundarioBrush}" />
-        <Setter Property="BorderThickness" Value="2,0,0,0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AmareloBrush}" />
+        <Setter Property="BorderThickness" Value="4,0,0,0" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
         <Setter Property="Padding" Value="8" />
         <Setter Property="Margin" Value="0,16,0,0" />
+    </Style>
+
+    <!-- Cadastros em cards, 4 por linha -->
+    <Style Selector="ListBox.cartoes">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <UniformGrid Columns="4" VerticalAlignment="Top" />
+            </ItemsPanelTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ListBox.cartoes ListBoxItem">
+        <Setter Property="Margin" Value="0,0,12,12" />
+        <Setter Property="Padding" Value="12,16" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RaioGrande}" />
+    </Style>
+    <Style Selector="ListBox.cartoes ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+    <Style Selector="ListBox.cartoes ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HojeFundoBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="ListBox.cartoes TextBlock.cartaoNome">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+    <Style Selector="ListBox.cartoes TextBlock.secundario">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 </Styles>

@@ -5,11 +5,13 @@
         <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
         <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
-        <Setter Property="Padding" Value="{DynamicResource PaddingEspaco2}" />
-        <Setter Property="Margin" Value="0,0,-1,0" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RaioGrande}" />
+        <Setter Property="Padding" Value="12" />
     </Style>
     <Style Selector="Border.dia.fechado">
         <Setter Property="Background" Value="{DynamicResource SuperficieSutilBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Border.dia.fechado TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource DiaFechadoBrush}" />
@@ -19,7 +21,7 @@
     <Style Selector="Border.dia.hoje">
         <Setter Property="Background" Value="{DynamicResource HojeFundoBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
-        <Setter Property="BorderThickness" Value="1,2,1,1" />
+        <Setter Property="BorderThickness" Value="2" />
     </Style>
     <Style Selector="Border.dia.hoje TextBlock.diaNumero">
         <Setter Property="Foreground" Value="{DynamicResource DestaqueBrush}" />
@@ -27,13 +29,19 @@
 
     <Style Selector="TextBlock.diaNumero">
         <Setter Property="FontFamily" Value="{DynamicResource FonteTitulo}" />
-        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoTitulo}" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+    </Style>
+
+    <Style Selector="TextBlock.diaTitulo">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Bold" />
     </Style>
 
     <!-- Feriado: indicador sutil, sem bloco chamativo -->
     <Style Selector="Ellipse.feriadoPonto">
-        <Setter Property="Width" Value="5" />
-        <Setter Property="Height" Value="5" />
+        <Setter Property="Width" Value="7" />
+        <Setter Property="Height" Value="7" />
         <Setter Property="Fill" Value="{DynamicResource FeriadoBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
@@ -56,9 +64,9 @@
         <Setter Property="Background" Value="{DynamicResource SuperficieSutilBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
         <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
-        <Setter Property="Padding" Value="6,2" />
-        <Setter Property="Margin" Value="0,0,0,2" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Margin" Value="0,0,0,4" />
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Border.func.disponivel">
@@ -73,6 +81,7 @@
         <Setter Property="BorderThickness" Value="0,1,0,0" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Padding" Value="0,8,0,0" />
+        <Setter Property="Margin" Value="0,12,0,0" />
     </Style>
 
     <Style Selector="Button.link">

@@ -109,8 +109,7 @@ public partial class CalendarioViewModel : ViewModelBase
 
     private async Task RecarregarAsync(bool refazerSetores = false)
     {
-        Dias.Clear();
-        if (_servico is null || FilialSelecionada is null) return;
+        if (_servico is null || FilialSelecionada is null) { Dias.Clear(); return; }
 
         var semana = await _servico.ObterSemanaAsync(FilialSelecionada.Id, _inicioSemana);
         if (refazerSetores)
@@ -123,7 +122,10 @@ public partial class CalendarioViewModel : ViewModelBase
             SetorSelecionado = TodosSetores;
             _atualizandoSetores = false;
         }
-        foreach (var d in semana.Dias) Dias.Add(new DiaViewModel(d, SetorSelecionado?.Id));
+        // Troca tudo de uma vez, só depois da consulta: evita o piscar de tela vazia ao mudar de semana.
+        var novos = semana.Dias.Select(d => new DiaViewModel(d, SetorSelecionado?.Id)).ToList();
+        Dias.Clear();
+        foreach (var d in novos) Dias.Add(d);
     }
 
     private void AtualizarTitulo()

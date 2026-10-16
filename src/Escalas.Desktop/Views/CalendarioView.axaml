@@ -18,6 +18,11 @@
         <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{DynamicResource Espaco2}">
                 <TextBlock Classes="titulo" Text="Calendário" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Classes="secundario" Text="{Binding Mensagem}"
+                       Foreground="{DynamicResource AlertaMinimoBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource Espaco2}">
                 <ComboBox ItemsSource="{Binding Filiais}" SelectedItem="{Binding FilialSelecionada}"
                           MinWidth="180" VerticalAlignment="Center">
                     <ComboBox.ItemTemplate>
@@ -34,11 +39,7 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-            </StackPanel>
-            <TextBlock Grid.Column="1" Classes="secundario" Text="{Binding Mensagem}"
-                       Foreground="{DynamicResource AlertaMinimoBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource Espaco1}">
+                <Border Width="8" />
                 <Button Classes="barra" Content="‹" Command="{Binding SemanaAnteriorCommand}" />
                 <Button Classes="barra" Content="Hoje" Command="{Binding IrParaHojeCommand}" />
                 <TextBlock Text="{Binding TituloSemana}" VerticalAlignment="Center" Margin="8,0" />
@@ -69,10 +70,10 @@
                                             Command="{Binding $parent[UserControl].((vm:CalendarioViewModel)DataContext).AlternarDiaCommand}"
                                             CommandParameter="{Binding}" />
                                 </Grid>
-                                <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding TemFeriado}">
-                                    <Ellipse Classes="feriadoPonto" />
-                                    <TextBlock Classes="feriado" Text="{Binding NomeFeriado}" TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
+                                <Grid Margin="0,6,0,0" ColumnDefinitions="Auto,*" IsVisible="{Binding TemFeriado}">
+                                    <Ellipse Classes="feriadoPonto" VerticalAlignment="Top" Margin="0,5,4,0" />
+                                    <TextBlock Grid.Column="1" Classes="feriado" Text="{Binding NomeFeriado}" TextWrapping="Wrap" />
+                                </Grid>
                                 <TextBlock Classes="secundario" Text="Fechado" IsVisible="{Binding Fechado}" />
                             </StackPanel>
 
