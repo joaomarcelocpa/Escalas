@@ -231,7 +231,7 @@ public sealed class EscalaServiceTests : IDisposable
         Assert.Equal(StatusDia.Normal, semana.Dias[0].Status);
     }
 
-    private sealed class FeriadosFake : IFeriadoConsulta
+    internal sealed class FeriadosFake : IFeriadoConsulta
     {
         public List<Feriado> Itens { get; } = [];
 
@@ -239,7 +239,7 @@ public sealed class EscalaServiceTests : IDisposable
             Task.FromResult<IReadOnlyList<Feriado>>(Itens.Where(f => f.Data >= inicio && f.Data <= fim).ToList());
     }
 
-    private sealed class FabricaTeste(SqliteConnection conexao) : IDbContextFactory<EscalasDbContext>
+    internal sealed class FabricaTeste(SqliteConnection conexao) : IDbContextFactory<EscalasDbContext>
     {
         public EscalasDbContext CreateDbContext() =>
             new(new DbContextOptionsBuilder<EscalasDbContext>().UseSqlite(conexao).Options);

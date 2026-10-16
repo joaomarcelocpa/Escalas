@@ -29,9 +29,12 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
             .Where(f => f.FilialId == filialId && f.Ativo).OrderBy(f => f.Nome).ToListAsync(ct);
         var idsFuncionarios = funcionarios.Select(f => f.Id).ToList();
 
-        var escalas = await db.Escalas.AsNoTracking()
+        var excecoes = (await db.Escalas.AsNoTracking()
             .Where(e => e.Data >= inicio && e.Data <= fim && idsFuncionarios.Contains(e.FuncionarioId))
-            .ToListAsync(ct);
+            .ToListAsync(ct)).ToDictionary(e => (e.FuncionarioId, e.Data), e => e.Removido);
+        var modelo = (await db.EscalasPadrao.AsNoTracking()
+            .Where(p => idsFuncionarios.Contains(p.FuncionarioId)).ToListAsync(ct))
+            .Select(p => (p.FuncionarioId, p.DiaSemana)).ToHashSet();
         var definidos = await db.DiasFilial.AsNoTracking()
             .Where(d => d.FilialId == filialId && d.Data >= inicio && d.Data <= fim)
             .ToDictionaryAsync(d => d.Data, d => d.Fechado, ct);
@@ -48,7 +51,13 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
             var nomeFeriado = listaFeriados.Where(f => f.Data == data).Select(f => f.Nome).FirstOrDefault();
             var status = fechado ? StatusDia.Fechado : nomeFeriado is not null ? StatusDia.Feriado : StatusDia.Normal;
 
-            var idsEscalados = escalas.Where(e => e.Data == data).Select(e => e.FuncionarioId).ToHashSet();
+            // Escalados do dia = modelo semanal ± exceções da data. Dia fechado não tem ninguém escalado.
+            var idsEscalados = fechado
+                ? []
+                : funcionarios.Where(f => excecoes.TryGetValue((f.Id, data), out var removido)
+                        ? !removido
+                        : modelo.Contains((f.Id, data.DayOfWeek)))
+                    .Select(f => f.Id).ToHashSet();
             var contagem = funcionarios.Where(f => idsEscalados.Contains(f.Id))
                 .GroupBy(f => f.SetorId).ToDictionary(g => g.Key, g => g.Count());
             var alertas = RegraMinimoSetor.Avaliar(setoresMinimo, contagem, fechado).Select(a => a.SetorId).ToHashSet();
@@ -78,7 +87,7 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         var r = await ValidarAsync(db, func, data, null, ct);
         if (!r.Ok) return ResultadoOperacao.Falha(r.Erro!);
 
-        db.Escalas.Add(new Escala { FuncionarioId = funcionarioId, Data = data });
+        await IncluirNoDiaAsync(db, funcionarioId, data, ct);
         await db.SaveChangesAsync(ct);
         return ResultadoOperacao.Sucesso;
     }
@@ -86,8 +95,12 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
     public async Task<ResultadoOperacao> RemoverAsync(int funcionarioId, DateOnly data, CancellationToken ct = default)
     {
         await using var db = await factory.CreateDbContextAsync(ct);
-        var n = await db.Escalas.Where(e => e.FuncionarioId == funcionarioId && e.Data == data).ExecuteDeleteAsync(ct);
-        return n > 0 ? ResultadoOperacao.Sucesso : ResultadoOperacao.Falha("Funcionário não estava escalado neste dia.");
+        if (!await EstaEscaladoAsync(db, funcionarioId, data, ct))
+            return ResultadoOperacao.Falha("Funcionário não estava escalado neste dia.");
+
+        await RetirarDoDiaAsync(db, funcionarioId, data, ct);
+        await db.SaveChangesAsync(ct);
+        return ResultadoOperacao.Sucesso;
     }
 
     public async Task<ResultadoOperacao> MoverAsync(int funcionarioId, DateOnly origem, DateOnly destino, CancellationToken ct = default)
@@ -96,13 +109,14 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         var func = await db.Funcionarios.AsNoTracking().FirstOrDefaultAsync(f => f.Id == funcionarioId, ct);
         if (func is null) return ResultadoOperacao.Falha("Funcionário não encontrado.");
 
-        var escala = await db.Escalas.FirstOrDefaultAsync(e => e.FuncionarioId == funcionarioId && e.Data == origem, ct);
-        if (escala is null) return ResultadoOperacao.Falha("Funcionário não estava escalado no dia de origem.");
+        if (!await EstaEscaladoAsync(db, funcionarioId, origem, ct))
+            return ResultadoOperacao.Falha("Funcionário não estava escalado no dia de origem.");
 
         var r = await ValidarAsync(db, func, destino, origem, ct);
         if (!r.Ok) return ResultadoOperacao.Falha(r.Erro!);
 
-        escala.Data = destino;
+        await RetirarDoDiaAsync(db, funcionarioId, origem, ct);
+        await IncluirNoDiaAsync(db, funcionarioId, destino, ct);
         await db.SaveChangesAsync(ct);
         return ResultadoOperacao.Sucesso;
     }
@@ -120,6 +134,43 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         return ResultadoOperacao.Sucesso;
     }
 
+    /// <summary>Presença efetiva no dia: a exceção da data, se existir, senão o modelo semanal.</summary>
+    private static async Task<bool> EstaEscaladoAsync(EscalasDbContext db, int funcionarioId, DateOnly data, CancellationToken ct)
+    {
+        var excecao = await db.Escalas.AsNoTracking()
+            .Where(e => e.FuncionarioId == funcionarioId && e.Data == data)
+            .Select(e => (bool?)e.Removido).FirstOrDefaultAsync(ct);
+        if (excecao is not null) return !excecao.Value;
+        return await NoModeloAsync(db, funcionarioId, data, ct);
+    }
+
+    private static Task<bool> NoModeloAsync(EscalasDbContext db, int funcionarioId, DateOnly data, CancellationToken ct) =>
+        db.EscalasPadrao.AnyAsync(p => p.FuncionarioId == funcionarioId && p.DiaSemana == data.DayOfWeek, ct);
+
+    /// <summary>Inclui no dia: se o modelo já cobre, basta apagar a exceção de remoção; senão registra uma inclusão.</summary>
+    private static async Task IncluirNoDiaAsync(EscalasDbContext db, int funcionarioId, DateOnly data, CancellationToken ct)
+    {
+        var linha = await db.Escalas.FirstOrDefaultAsync(e => e.FuncionarioId == funcionarioId && e.Data == data, ct);
+        if (await NoModeloAsync(db, funcionarioId, data, ct))
+        {
+            if (linha is not null) db.Escalas.Remove(linha);
+        }
+        else if (linha is null) db.Escalas.Add(new Escala { FuncionarioId = funcionarioId, Data = data });
+        else linha.Removido = false;
+    }
+
+    /// <summary>Retira do dia: se o modelo cobre, registra uma remoção; senão apaga a inclusão pontual.</summary>
+    private static async Task RetirarDoDiaAsync(EscalasDbContext db, int funcionarioId, DateOnly data, CancellationToken ct)
+    {
+        var linha = await db.Escalas.FirstOrDefaultAsync(e => e.FuncionarioId == funcionarioId && e.Data == data, ct);
+        if (await NoModeloAsync(db, funcionarioId, data, ct))
+        {
+            if (linha is null) db.Escalas.Add(new Escala { FuncionarioId = funcionarioId, Data = data, Removido = true });
+            else linha.Removido = true;
+        }
+        else if (linha is not null) db.Escalas.Remove(linha);
+    }
+
     /// <summary>Domingo vem fechado até que alguém o reabra explicitamente.</summary>
     private static bool FechadoPorPadrao(DateOnly data) => data.DayOfWeek == DayOfWeek.Sunday;
 
@@ -130,7 +181,7 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         var definido = await db.DiasFilial.Where(d => d.FilialId == func.FilialId && d.Data == destino)
             .Select(d => (bool?)d.Fechado).FirstOrDefaultAsync(ct);
         var fechado = definido ?? FechadoPorPadrao(destino);
-        var jaEscalado = await db.Escalas.AnyAsync(e => e.FuncionarioId == func.Id && e.Data == destino, ct);
+        var jaEscalado = await EstaEscaladoAsync(db, func.Id, destino, ct);
         var escalavel = new FuncionarioEscalavel(func.Id, func.FilialId, func.Ativo);
 
         return origem is { } o

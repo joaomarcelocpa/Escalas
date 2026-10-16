@@ -12,6 +12,7 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
     public DbSet<Funcionario> Funcionarios => Set<Funcionario>();
     public DbSet<DiaFilial> DiasFilial => Set<DiaFilial>();
     public DbSet<Escala> Escalas => Set<Escala>();
+    public DbSet<EscalaPadrao> EscalasPadrao => Set<EscalaPadrao>();
     public DbSet<Feriado> Feriados => Set<Feriado>();
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -58,6 +59,12 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
         b.Entity<Escala>(e =>
         {
             e.HasIndex(x => new { x.FuncionarioId, x.Data }).IsUnique();
+            e.HasOne(x => x.Funcionario).WithMany().HasForeignKey(x => x.FuncionarioId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<EscalaPadrao>(e =>
+        {
+            e.HasIndex(x => new { x.FuncionarioId, x.DiaSemana }).IsUnique();
             e.HasOne(x => x.Funcionario).WithMany().HasForeignKey(x => x.FuncionarioId).OnDelete(DeleteBehavior.Cascade);
         });
 

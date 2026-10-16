@@ -1,0 +1,128 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="using:Escalas.Desktop.Controls"
+             xmlns:vm="using:Escalas.Desktop.ViewModels"
+             xmlns:app="using:Escalas.Application.Calendario"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+             x:Class="Escalas.Desktop.Views.EscalaSemanalView"
+             x:DataType="vm:EscalaSemanalViewModel">
+
+    <Design.DataContext>
+        <vm:EscalaSemanalViewModel />
+    </Design.DataContext>
+
+    <DockPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" Margin="0,0,0,4">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Espaco2}">
+                <TextBlock Classes="titulo" Text="Escala semanal" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding Filiais}" SelectedItem="{Binding FilialSelecionada}"
+                          MinWidth="180" VerticalAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="app:FilialResumo">
+                            <TextBlock Text="{Binding Nome}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox ItemsSource="{Binding Setores}" SelectedItem="{Binding SetorSelecionado}"
+                          MinWidth="160" VerticalAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SetorFiltro">
+                            <TextBlock Text="{Binding Nome}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+            <TextBlock Grid.Column="1" Classes="secundario" Text="{Binding Mensagem}"
+                       Foreground="{DynamicResource AlertaMinimoBrush}"
+                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+        </Grid>
+        <TextBlock DockPanel.Dock="Top" Classes="secundario" Margin="0,0,0,12"
+                   Text="Modelo que se repete em todas as semanas. Ajustes de um dia específico são feitos no Calendário." />
+
+        <TextBlock DockPanel.Dock="Top" Classes="secundario" IsVisible="{Binding SemFiliais}"
+                   Text="Nenhuma filial cadastrada. Cadastre uma filial para montar a escala." />
+
+        <ItemsControl ItemsSource="{Binding Dias}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DiaPadraoViewModel">
+                    <Border Classes="dia" DragDrop.AllowDrop="True">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Classes="diaNumero" Text="{Binding Titulo}" Margin="0,0,0,8" />
+
+                            <!-- Disponíveis: origem para alocar e destino para desalocar -->
+                            <Border DockPanel.Dock="Bottom" Classes="disponiveis" Tag="disponiveis"
+                                    DragDrop.AllowDrop="True" MaxHeight="170">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Classes="secundario" Text="{Binding TextoDisponiveis}" />
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding Disponiveis}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:FuncionarioPadraoItem">
+                                                    <Border Classes="func disponivel">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                                            <ctl:AvatarFuncionario Width="22" Height="22" Margin="0,0,6,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
+                                                            </StackPanel>
+                                                            <Button Grid.Column="2" Classes="link" Content="Seg–Sáb" ToolTip.Tip="Alocar de segunda a sábado"
+                                                                    VerticalAlignment="Center"
+                                                                    Command="{Binding $parent[UserControl].((vm:EscalaSemanalViewModel)DataContext).AlocarTodosOsDiasCommand}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Alocados por setor -->
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding Setores}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SetorPadraoViewModel">
+                                            <StackPanel Margin="0,0,0,8" Spacing="2">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Classes="setor" Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Grid.Column="1" Classes="setor" Text="{Binding Contagem}" />
+                                                </Grid>
+                                                <ItemsControl ItemsSource="{Binding Escalados}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:FuncionarioPadraoItem">
+                                                            <Border Classes="func">
+                                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                                    <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
+                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                                        <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
+                                                                    </StackPanel>
+                                                                    <Button Grid.Column="2" Classes="link" Content="×" ToolTip.Tip="Remover deste dia"
+                                                                            VerticalAlignment="Center"
+                                                                            Command="{Binding $parent[UserControl].((vm:EscalaSemanalViewModel)DataContext).DesalocarCommand}"
+                                                                            CommandParameter="{Binding}" />
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </DockPanel>
+</UserControl>

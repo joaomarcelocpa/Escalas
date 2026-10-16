@@ -73,12 +73,35 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.Property<int>("FuncionarioId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("Removido")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("FuncionarioId", "Data")
                         .IsUnique();
 
                     b.ToTable("Escalas");
+                });
+
+            modelBuilder.Entity("Escalas.Domain.Entidades.EscalaPadrao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DiaSemana")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FuncionarioId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FuncionarioId", "DiaSemana")
+                        .IsUnique();
+
+                    b.ToTable("EscalasPadrao");
                 });
 
             modelBuilder.Entity("Escalas.Domain.Entidades.Feriado", b =>
@@ -230,6 +253,17 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                 });
 
             modelBuilder.Entity("Escalas.Domain.Entidades.Escala", b =>
+                {
+                    b.HasOne("Escalas.Domain.Entidades.Funcionario", "Funcionario")
+                        .WithMany()
+                        .HasForeignKey("FuncionarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Funcionario");
+                });
+
+            modelBuilder.Entity("Escalas.Domain.Entidades.EscalaPadrao", b =>
                 {
                     b.HasOne("Escalas.Domain.Entidades.Funcionario", "Funcionario")
                         .WithMany()

@@ -10,6 +10,7 @@ public static class CalendarioModulo
     public static IServiceCollection AdicionarCalendario(this IServiceCollection services)
     {
         services.AddTransient<IEscalaService, EscalaService>();
+        services.AddTransient<IEscalaPadraoService, EscalaPadraoService>();
         return services;
     }
 }

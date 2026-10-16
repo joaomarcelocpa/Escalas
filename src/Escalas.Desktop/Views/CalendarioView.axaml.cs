@@ -26,6 +26,8 @@ public partial class CalendarioView : UserControl
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
         if (e.Source is not Control origem) return;
         if (origem.DataContext is not FuncionarioItem item) return;
+        for (Visual? v = origem; v is not null && v != this; v = v.GetVisualParent())
+            if (v is Button) return; // clique em botão do cartão (ex.: remover) não inicia arraste
 
         var dado = new DataTransfer();
         dado.Add(DataTransferItem.CreateText($"{item.Id}|{item.Origem?.ToString(FormatoData, CultureInfo.InvariantCulture)}"));

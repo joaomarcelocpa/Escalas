@@ -117,12 +117,16 @@
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="vm:FuncionarioItem">
                                                             <Border Classes="func">
-                                                                <Grid ColumnDefinitions="Auto,*">
+                                                                <Grid ColumnDefinitions="Auto,*,Auto">
                                                                     <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
                                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                                         <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
                                                                         <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
                                                                     </StackPanel>
+                                                                    <Button Grid.Column="2" Classes="link" Content="×" ToolTip.Tip="Remover deste dia"
+                                                                            VerticalAlignment="Center"
+                                                                            Command="{Binding $parent[UserControl].((vm:CalendarioViewModel)DataContext).RemoverEscaladoCommand}"
+                                                                            CommandParameter="{Binding}" />
                                                                 </Grid>
                                                             </Border>
                                                         </DataTemplate>

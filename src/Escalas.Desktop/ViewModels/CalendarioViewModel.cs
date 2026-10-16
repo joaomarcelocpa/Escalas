@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Escalas.Application.Calendario;
+using System.Globalization;
+using Escalas.Desktop.Servicos;
 using Escalas.Domain.Calendario;
 
 namespace Escalas.Desktop.ViewModels;
@@ -56,7 +58,10 @@ public partial class CalendarioViewModel : ViewModelBase
     private static readonly string[] Meses =
         ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
+    private static readonly CultureInfo PtBr = new("pt-BR");
+
     private readonly IEscalaService? _servico;
+    private readonly IDialogoConfirmacao? _dialogo;
     private DateOnly _inicioSemana = RegraEscala.InicioDaSemana(DateOnly.FromDateTime(DateTime.Today));
 
     public ObservableCollection<FilialResumo> Filiais { get; } = [];
@@ -84,9 +89,10 @@ public partial class CalendarioViewModel : ViewModelBase
     /// <summary>Construtor para o previewer.</summary>
     public CalendarioViewModel() => AtualizarTitulo();
 
-    public CalendarioViewModel(IEscalaService servico)
+    public CalendarioViewModel(IEscalaService servico, IDialogoConfirmacao dialogo)
     {
         _servico = servico;
+        _dialogo = dialogo;
         AtualizarTitulo();
         _ = CarregarAsync();
     }
@@ -153,23 +159,54 @@ public partial class CalendarioViewModel : ViewModelBase
     private async Task AlternarDiaAsync(DiaViewModel dia)
     {
         if (_servico is null || FilialSelecionada is null) return;
-        await Aplicar(_servico.DefinirDiaFechadoAsync(FilialSelecionada.Id, dia.Data, !dia.Fechado));
+        var fechar = !dia.Fechado;
+        var mensagem = fechar
+            ? $"Fechar {Texto(dia.Data)}? Ninguém ficará escalado nesse dia."
+            : $"Reabrir {Texto(dia.Data)}? A escala volta a valer nesse dia.";
+        if (!await Confirmar(fechar ? "Fechar dia" : "Reabrir dia", mensagem, fechar ? "Fechar" : "Reabrir")) return;
+        await Aplicar(_servico.DefinirDiaFechadoAsync(FilialSelecionada.Id, dia.Data, fechar));
+    }
+
+    [RelayCommand]
+    private async Task RemoverEscaladoAsync(FuncionarioItem item)
+    {
+        if (item.Origem is { } data) await SoltarEmDisponiveisAsync(item.Id, data);
+    }
+
+    private static string Texto(DateOnly data) => data.ToString("ddd dd/MM", PtBr);
+
+    private string NomeDe(int funcionarioId) =>
+        Dias.SelectMany(d => d.Setores.SelectMany(s => s.Escalados).Concat(d.Disponiveis))
+            .FirstOrDefault(f => f.Id == funcionarioId)?.Nome ?? "o funcionário";
+
+    private async Task<bool> Confirmar(string titulo, string mensagem, string textoConfirmar)
+    {
+        Mensagem = null;
+        return _dialogo is null || await _dialogo.ConfirmarAsync(titulo, mensagem + "\n\nVale apenas para este dia; o modelo semanal não muda.", textoConfirmar);
     }
 
     /// <summary>Chamado pela View ao soltar um funcionário sobre um dia.</summary>
-    public Task SoltarEmDiaAsync(int funcionarioId, DateOnly? origem, DateOnly destino)
+    public async Task SoltarEmDiaAsync(int funcionarioId, DateOnly? origem, DateOnly destino)
     {
-        if (_servico is null) return Task.CompletedTask;
-        if (origem is null) return Aplicar(_servico.EscalarAsync(funcionarioId, destino));
-        if (origem == destino) return Task.CompletedTask;
-        return Aplicar(_servico.MoverAsync(funcionarioId, origem.Value, destino));
+        if (_servico is null) return;
+        var nome = NomeDe(funcionarioId);
+        if (origem is null)
+        {
+            if (!await Confirmar("Incluir no dia", $"Incluir {nome} em {Texto(destino)}?", "Incluir")) return;
+            await Aplicar(_servico.EscalarAsync(funcionarioId, destino));
+            return;
+        }
+        if (origem == destino) return;
+        if (!await Confirmar("Mover funcionário", $"Mover {nome} de {Texto(origem.Value)} para {Texto(destino)}?", "Mover")) return;
+        await Aplicar(_servico.MoverAsync(funcionarioId, origem.Value, destino));
     }
 
     /// <summary>Chamado pela View ao soltar um funcionário escalado na lista de disponíveis.</summary>
-    public Task SoltarEmDisponiveisAsync(int funcionarioId, DateOnly? origem)
+    public async Task SoltarEmDisponiveisAsync(int funcionarioId, DateOnly? origem)
     {
-        if (_servico is null || origem is null) return Task.CompletedTask;
-        return Aplicar(_servico.RemoverAsync(funcionarioId, origem.Value));
+        if (_servico is null || origem is null) return;
+        if (!await Confirmar("Remover do dia", $"Remover {NomeDe(funcionarioId)} de {Texto(origem.Value)}?", "Remover")) return;
+        await Aplicar(_servico.RemoverAsync(funcionarioId, origem.Value));
     }
 
     private async Task Aplicar(Task<ResultadoOperacao> operacao)
