@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Escalas.Domain\Escalas.Domain.csproj" />
     <ProjectReference Include="..\..\src\Escalas.Application\Escalas.Application.csproj" />
+    <ProjectReference Include="..\..\src\Escalas.Infrastructure\Escalas.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

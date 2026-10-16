@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Escalas.Application.Nucleo;
 using Escalas.Desktop.Navegacao;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Escalas.Desktop.ViewModels;
 
@@ -19,6 +21,9 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     public partial ViewModelBase? PaginaAtual { get; set; }
 
+    [ObservableProperty]
+    public partial string? StatusBackup { get; set; }
+
     /// <summary>Construtor para o previewer.</summary>
     public MainViewModel() => Menu = [];
 
@@ -27,6 +32,19 @@ public partial class MainViewModel : ViewModelBase
         _sp = sp;
         Menu = menu;
         if (menu.Count > 0) Navegar(menu[0]);
+    }
+
+    public void ExportarBackup(string destino)
+    {
+        try
+        {
+            _sp!.GetRequiredService<IBackupService>().Exportar(destino);
+            StatusBackup = "Backup exportado.";
+        }
+        catch (Exception ex)
+        {
+            StatusBackup = $"Falha no backup: {ex.Message}";
+        }
     }
 
     [RelayCommand]
