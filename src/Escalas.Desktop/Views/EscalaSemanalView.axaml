@@ -54,7 +54,10 @@
                 <DataTemplate x:DataType="vm:DiaPadraoViewModel">
                     <Border Classes="dia" DragDrop.AllowDrop="True">
                         <DockPanel>
-                            <TextBlock DockPanel.Dock="Top" Classes="diaNumero" Text="{Binding Titulo}" Margin="0,0,0,8" />
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                                <TextBlock Classes="diaNumero" Text="{Binding Titulo}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1" Classes="setor" Text="{Binding Contagem}" VerticalAlignment="Center" />
+                            </Grid>
 
                             <!-- Disponíveis: origem para alocar e destino para desalocar -->
                             <Border DockPanel.Dock="Bottom" Classes="disponiveis" Tag="disponiveis"
@@ -85,36 +88,24 @@
                                 </DockPanel>
                             </Border>
 
-                            <!-- Alocados por setor -->
+                            <!-- Alocados no dia (lista única; o setor aparece embaixo do nome) -->
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding Setores}">
+                                <ItemsControl ItemsSource="{Binding Escalados}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:SetorPadraoViewModel">
-                                            <StackPanel Margin="0,0,0,8" Spacing="2">
-                                                <Grid ColumnDefinitions="*,Auto">
-                                                    <TextBlock Classes="setor" Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Grid.Column="1" Classes="setor" Text="{Binding Contagem}" />
+                                        <DataTemplate x:DataType="vm:FuncionarioPadraoItem">
+                                            <Border Classes="func">
+                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                    <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="2" Classes="link" Content="×" ToolTip.Tip="Remover deste dia"
+                                                            VerticalAlignment="Center"
+                                                            Command="{Binding $parent[UserControl].((vm:EscalaSemanalViewModel)DataContext).DesalocarCommand}"
+                                                            CommandParameter="{Binding}" />
                                                 </Grid>
-                                                <ItemsControl ItemsSource="{Binding Escalados}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="vm:FuncionarioPadraoItem">
-                                                            <Border Classes="func">
-                                                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                                                    <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
-                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                                        <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
-                                                                        <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
-                                                                    </StackPanel>
-                                                                    <Button Grid.Column="2" Classes="link" Content="×" ToolTip.Tip="Remover deste dia"
-                                                                            VerticalAlignment="Center"
-                                                                            Command="{Binding $parent[UserControl].((vm:EscalaSemanalViewModel)DataContext).DesalocarCommand}"
-                                                                            CommandParameter="{Binding}" />
-                                                                </Grid>
-                                                            </Border>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </StackPanel>
+                                            </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

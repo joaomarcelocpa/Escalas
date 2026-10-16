@@ -9,14 +9,6 @@ namespace Escalas.Desktop.ViewModels;
 /// <summary>Funcionário alocado (ou disponível) em um dia do modelo semanal. <see cref="Origem"/> nulo = veio de "Disponíveis".</summary>
 public record FuncionarioPadraoItem(int Id, string Nome, string? Detalhe, DayOfWeek? Origem, byte[]? Foto = null);
 
-public class SetorPadraoViewModel(SetorDiaDto dto, DayOfWeek dia)
-{
-    public string Nome { get; } = dto.Nome;
-    public string Contagem { get; } = dto.Escalados.Count.ToString();
-    public IReadOnlyList<FuncionarioPadraoItem> Escalados { get; } =
-        dto.Escalados.Select(f => new FuncionarioPadraoItem(f.Id, f.Nome, dto.Nome, dia, f.Foto)).ToList();
-}
-
 public class DiaPadraoViewModel
 {
     public DiaPadraoViewModel(DiaPadraoDto dto, int? setorId)
@@ -24,8 +16,10 @@ public class DiaPadraoViewModel
         Dia = dto.Dia;
         Titulo = new CultureInfo("pt-BR").TextInfo.ToTitleCase(
             new CultureInfo("pt-BR").DateTimeFormat.GetDayName(dto.Dia));
-        Setores = dto.Setores.Where(s => setorId is null || s.SetorId == setorId)
-            .Select(s => new SetorPadraoViewModel(s, dto.Dia)).ToList();
+        Escalados = dto.Setores.Where(s => setorId is null || s.SetorId == setorId)
+            .SelectMany(s => s.Escalados.Select(f => new FuncionarioPadraoItem(f.Id, f.Nome, s.Nome, dto.Dia, f.Foto)))
+            .OrderBy(f => f.Nome).ToList();
+        Contagem = Escalados.Count.ToString();
         Disponiveis = dto.Disponiveis.Where(f => setorId is null || f.SetorId == setorId)
             .Select(f => new FuncionarioPadraoItem(f.Id, f.Nome, f.SetorNome, null, f.Foto)).ToList();
         TextoDisponiveis = $"Disponíveis ({Disponiveis.Count})";
@@ -33,7 +27,8 @@ public class DiaPadraoViewModel
 
     public DayOfWeek Dia { get; }
     public string Titulo { get; }
-    public IReadOnlyList<SetorPadraoViewModel> Setores { get; }
+    public IReadOnlyList<FuncionarioPadraoItem> Escalados { get; }
+    public string Contagem { get; }
     public IReadOnlyList<FuncionarioPadraoItem> Disponiveis { get; }
     public string TextoDisponiveis { get; }
 }
