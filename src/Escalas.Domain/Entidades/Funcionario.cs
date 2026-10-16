@@ -9,4 +9,6 @@ public class Funcionario
     public Setor? Setor { get; set; }
     public string Nome { get; set; } = "";
     public bool Ativo { get; set; } = true;
+    /// <summary>Foto já redimensionada (PNG pequeno), guardada no próprio banco.</summary>
+    public byte[]? Foto { get; set; }
 }

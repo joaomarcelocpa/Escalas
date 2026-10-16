@@ -4,7 +4,7 @@ public enum StatusDia { Normal, Feriado, Fechado }
 
 public record FilialResumo(int Id, string Nome);
 
-public record FuncionarioEscaladoDto(int Id, string Nome);
+public record FuncionarioEscaladoDto(int Id, string Nome, byte[]? Foto = null);
 
 public record SetorDiaDto(
     int SetorId,
@@ -13,7 +13,7 @@ public record SetorDiaDto(
     IReadOnlyList<FuncionarioEscaladoDto> Escalados,
     bool AbaixoDoMinimo);
 
-public record FuncionarioDisponivelDto(int Id, string Nome, int SetorId, string SetorNome);
+public record FuncionarioDisponivelDto(int Id, string Nome, int SetorId, string SetorNome, byte[]? Foto = null);
 
 /// <param name="NomeFeriado">Preenchido sempre que houver feriado, mesmo com o dia fechado.</param>
 public record DiaDto(

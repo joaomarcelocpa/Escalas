@@ -26,8 +26,8 @@ public partial class App : Avalonia.Application
             var menu = new List<ItemNavegacao>();
             services.AdicionarNucleo();
             services.AdicionarCadastros().AdicionarFeriados().AdicionarCalendario();
-            CadastrosUiModulo.Registrar(services, menu);
             CalendarioUiModulo.Registrar(services, menu);
+            CadastrosUiModulo.Registrar(services, menu);
             services.AddSingleton<IReadOnlyList<ItemNavegacao>>(menu);
             services.AddSingleton<MainViewModel>();
             var sp = services.BuildServiceProvider();

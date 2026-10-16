@@ -151,6 +151,9 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.Property<int>("FilialId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<byte[]>("Foto")
+                        .HasColumnType("BLOB");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasColumnType("TEXT");

@@ -32,9 +32,9 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         var escalas = await db.Escalas.AsNoTracking()
             .Where(e => e.Data >= inicio && e.Data <= fim && idsFuncionarios.Contains(e.FuncionarioId))
             .ToListAsync(ct);
-        var fechados = (await db.DiasFilial.AsNoTracking()
-            .Where(d => d.FilialId == filialId && d.Data >= inicio && d.Data <= fim && d.Fechado)
-            .Select(d => d.Data).ToListAsync(ct)).ToHashSet();
+        var definidos = await db.DiasFilial.AsNoTracking()
+            .Where(d => d.FilialId == filialId && d.Data >= inicio && d.Data <= fim)
+            .ToDictionaryAsync(d => d.Data, d => d.Fechado, ct);
         var listaFeriados = await feriados.ObterAsync(filialId, inicio, fim, ct);
 
         var setoresMinimo = setores.Select(s => new SetorMinimo(s.Id, s.Nome, s.MinimoFuncionarios)).ToList();
@@ -44,7 +44,7 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         for (var i = 0; i < 7; i++)
         {
             var data = inicio.AddDays(i);
-            var fechado = fechados.Contains(data);
+            var fechado = definidos.TryGetValue(data, out var definido) ? definido : FechadoPorPadrao(data);
             var nomeFeriado = listaFeriados.Where(f => f.Data == data).Select(f => f.Nome).FirstOrDefault();
             var status = fechado ? StatusDia.Fechado : nomeFeriado is not null ? StatusDia.Feriado : StatusDia.Normal;
 
@@ -56,11 +56,11 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
             var setoresDia = setores.Select(s => new SetorDiaDto(
                 s.Id, s.Nome, s.MinimoFuncionarios,
                 funcionarios.Where(f => f.SetorId == s.Id && idsEscalados.Contains(f.Id))
-                    .Select(f => new FuncionarioEscaladoDto(f.Id, f.Nome)).ToList(),
+                    .Select(f => new FuncionarioEscaladoDto(f.Id, f.Nome, f.Foto)).ToList(),
                 alertas.Contains(s.Id))).ToList();
 
             var disponiveis = funcionarios.Where(f => !idsEscalados.Contains(f.Id))
-                .Select(f => new FuncionarioDisponivelDto(f.Id, f.Nome, f.SetorId, nomesSetor.GetValueOrDefault(f.SetorId, "")))
+                .Select(f => new FuncionarioDisponivelDto(f.Id, f.Nome, f.SetorId, nomesSetor.GetValueOrDefault(f.SetorId, ""), f.Foto))
                 .ToList();
 
             dias.Add(new DiaDto(data, status, nomeFeriado, setoresDia, disponiveis));
@@ -120,11 +120,16 @@ public class EscalaService(IDbContextFactory<EscalasDbContext> factory, IFeriado
         return ResultadoOperacao.Sucesso;
     }
 
+    /// <summary>Domingo vem fechado até que alguém o reabra explicitamente.</summary>
+    private static bool FechadoPorPadrao(DateOnly data) => data.DayOfWeek == DayOfWeek.Sunday;
+
     /// <param name="origem">Quando informado, valida como movimentação.</param>
     private static async Task<ResultadoRegra> ValidarAsync(
         EscalasDbContext db, Funcionario func, DateOnly destino, DateOnly? origem, CancellationToken ct)
     {
-        var fechado = await db.DiasFilial.AnyAsync(d => d.FilialId == func.FilialId && d.Data == destino && d.Fechado, ct);
+        var definido = await db.DiasFilial.Where(d => d.FilialId == func.FilialId && d.Data == destino)
+            .Select(d => (bool?)d.Fechado).FirstOrDefaultAsync(ct);
+        var fechado = definido ?? FechadoPorPadrao(destino);
         var jaEscalado = await db.Escalas.AnyAsync(e => e.FuncionarioId == func.Id && e.Data == destino, ct);
         var escalavel = new FuncionarioEscalavel(func.Id, func.FilialId, func.Ativo);
 

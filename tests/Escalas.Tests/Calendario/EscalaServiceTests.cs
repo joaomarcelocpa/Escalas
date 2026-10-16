@@ -53,6 +53,36 @@ public sealed class EscalaServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Domingo_VemFechadoPorPadrao_ePodeSerReaberto()
+    {
+        var domingo = Segunda.AddDays(6);
+
+        var dia = (await _servico.ObterSemanaAsync(1, Segunda)).Dias[6];
+        Assert.True(dia.Fechado);
+        Assert.False((await _servico.EscalarAsync(1, domingo)).Ok);
+
+        await _servico.DefinirDiaFechadoAsync(1, domingo, false);
+
+        Assert.False((await _servico.ObterSemanaAsync(1, Segunda)).Dias[6].Fechado);
+        Assert.True((await _servico.EscalarAsync(1, domingo)).Ok);
+    }
+
+    [Fact]
+    public async Task Foto_ChegaNosDtosDaSemana()
+    {
+        await using (var db = _fabrica.CreateDbContext())
+        {
+            db.Funcionarios.Find(1)!.Foto = [1, 2, 3];
+            db.SaveChanges();
+        }
+        await _servico.EscalarAsync(1, Segunda);
+
+        var dia = (await _servico.ObterSemanaAsync(1, Segunda)).Dias[0];
+        Assert.Equal(new byte[] { 1, 2, 3 }, dia.Setores.SelectMany(x => x.Escalados).Single(f => f.Id == 1).Foto);
+        Assert.Null(dia.Disponiveis.First(f => f.Id == 2).Foto);
+    }
+
+    [Fact]
     public async Task ObterSemana_RetornaSeteDiasComecandoNaSegunda()
     {
         var semana = await _servico.ObterSemanaAsync(1, Quarta);

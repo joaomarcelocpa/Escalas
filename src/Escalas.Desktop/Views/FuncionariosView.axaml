@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Escalas.Desktop.ViewModels"
+             xmlns:ctl="using:Escalas.Desktop.Controls"
              xmlns:ent="using:Escalas.Domain.Entidades"
              x:Class="Escalas.Desktop.Views.FuncionariosView"
              x:DataType="vm:FuncionariosViewModel">
@@ -23,9 +24,10 @@
                 <ListBox Classes="cadastro" ItemsSource="{Binding Itens}" SelectedItem="{Binding Selecionado}">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="ent:Funcionario">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="{Binding Nome}" />
-                                <TextBlock Grid.Column="1" Classes="secundario">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <ctl:AvatarFuncionario Width="24" Height="24" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
+                                <TextBlock Grid.Column="1" Text="{Binding Nome}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Classes="secundario" VerticalAlignment="Center">
                                     <Run Text="{Binding Setor.Nome}" />
                                 </TextBlock>
                             </Grid>
@@ -35,6 +37,13 @@
             </Border>
 
             <StackPanel Grid.Column="2" Classes="formulario">
+                <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
+                    <ctl:AvatarFuncionario Width="56" Height="56" Foto="{Binding Foto}" Nome="{Binding Nome}" />
+                    <StackPanel VerticalAlignment="Center" Spacing="4">
+                        <Button Classes="secundario" Content="Escolher foto…" Click="EscolherFoto_Click" />
+                        <Button Classes="secundario" Content="Remover foto" Command="{Binding RemoverFotoCommand}" />
+                    </StackPanel>
+                </StackPanel>
                 <TextBlock Classes="rotulo" Text="Nome" Margin="0,0,0,4" />
                 <TextBox Text="{Binding Nome}" />
                 <TextBlock Classes="rotulo" Text="Setor" />

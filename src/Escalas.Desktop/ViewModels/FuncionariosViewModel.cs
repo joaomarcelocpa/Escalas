@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Escalas.Application.Cadastros;
+using Avalonia.Media.Imaging;
 using Escalas.Domain.Entidades;
 
 namespace Escalas.Desktop.ViewModels;
@@ -22,6 +23,27 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
     [ObservableProperty] public partial Setor? SetorSelecionado { get; set; }
     [ObservableProperty] public partial string Nome { get; set; } = "";
     [ObservableProperty] public partial bool Ativo { get; set; } = true;
+    [ObservableProperty] public partial byte[]? Foto { get; set; }
+
+    /// <summary>Lê a imagem escolhida, reduz para um quadrado pequeno e guarda como PNG (a foto vai dentro do banco).</summary>
+    public void DefinirFoto(Stream imagem)
+    {
+        Erro = null;
+        try
+        {
+            using var reduzida = Bitmap.DecodeToWidth(imagem, 192, BitmapInterpolationMode.HighQuality);
+            using var saida = new MemoryStream();
+            reduzida.Save(saida);
+            Foto = saida.ToArray();
+        }
+        catch
+        {
+            Erro = "Não foi possível ler essa imagem. Use um arquivo PNG ou JPG.";
+        }
+    }
+
+    [RelayCommand]
+    private void RemoverFoto() => Foto = null;
 
     public FuncionariosViewModel(IFilialService filiais, ISetorService setores, IFuncionarioService servico)
     {
@@ -48,6 +70,7 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
         _id = value?.Id ?? 0;
         Nome = value?.Nome ?? "";
         Ativo = value?.Ativo ?? true;
+        Foto = value?.Foto;
         SetorSelecionado = value is null ? null : Setores.FirstOrDefault(s => s.Id == value.SetorId);
     }
 
@@ -78,6 +101,7 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
             FilialId = FilialSelecionada.Id,
             SetorId = SetorSelecionado?.Id ?? 0,
             Ativo = Ativo,
+            Foto = Foto,
         });
         await CarregarAsync(null);
         Novo();

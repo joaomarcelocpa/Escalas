@@ -7,7 +7,7 @@ using Escalas.Domain.Calendario;
 namespace Escalas.Desktop.ViewModels;
 
 /// <summary>Funcionário exibido em um dia. <see cref="Origem"/> é nulo quando vem da lista de disponíveis.</summary>
-public record FuncionarioItem(int Id, string Nome, string? Detalhe, DateOnly? Origem);
+public record FuncionarioItem(int Id, string Nome, string? Detalhe, DateOnly? Origem, byte[]? Foto = null);
 
 public class SetorDiaViewModel(SetorDiaDto dto, DateOnly data)
 {
@@ -16,7 +16,7 @@ public class SetorDiaViewModel(SetorDiaDto dto, DateOnly data)
     // Mínimo por setor desativado por enquanto (escala livre); a regra segue no Domain.
     public bool AbaixoDoMinimo => false;
     public IReadOnlyList<FuncionarioItem> Escalados { get; } =
-        dto.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, null, data)).ToList();
+        dto.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, dto.Nome, data, f.Foto)).ToList();
 }
 
 /// <summary>Opção do filtro de setor; <see cref="Id"/> nulo significa todos os setores.</summary>
@@ -35,7 +35,7 @@ public class DiaViewModel
         Fechado = dto.Fechado;
         TextoFechar = dto.Fechado ? "Reabrir" : "Fechar";
         Setores = dto.Setores.Where(s => setorId is null || s.SetorId == setorId).Select(s => new SetorDiaViewModel(s, dto.Data)).ToList();
-        Disponiveis = dto.Disponiveis.Where(f => setorId is null || f.SetorId == setorId).Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, null)).ToList();
+        Disponiveis = dto.Disponiveis.Where(f => setorId is null || f.SetorId == setorId).Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, null, f.Foto)).ToList();
         TextoDisponiveis = $"Disponíveis ({Disponiveis.Count})";
     }
 

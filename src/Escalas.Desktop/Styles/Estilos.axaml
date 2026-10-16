@@ -40,4 +40,13 @@
         <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
         <Setter Property="Padding" Value="8,6" />
     </Style>
+
+    <Style Selector="Border.avatar">
+        <Setter Property="Background" Value="{DynamicResource SuperficieSutilBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
+    </Style>
+    <Style Selector="TextBlock.avatarIniciais">
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+    </Style>
 </Styles>

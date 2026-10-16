@@ -40,8 +40,9 @@ public class FuncionarioService(IDbContextFactory<EscalasDbContext> factory) : I
         alvo.FilialId = funcionario.FilialId;
         alvo.SetorId = funcionario.SetorId;
         alvo.Ativo = funcionario.Ativo;
+        alvo.Foto = funcionario.Foto;
         await db.SaveChangesAsync(ct);
-        return new Funcionario { Id = alvo.Id, Nome = alvo.Nome, FilialId = alvo.FilialId, SetorId = alvo.SetorId, Ativo = alvo.Ativo };
+        return new Funcionario { Id = alvo.Id, Nome = alvo.Nome, FilialId = alvo.FilialId, SetorId = alvo.SetorId, Ativo = alvo.Ativo, Foto = alvo.Foto };
     }
 
     public async Task ExcluirAsync(int id, CancellationToken ct = default)

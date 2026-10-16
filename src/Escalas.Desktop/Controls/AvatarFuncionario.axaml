@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Escalas.Desktop.Controls.AvatarFuncionario">
+    <Border x:Name="Moldura" Classes="avatar" ClipToBounds="True">
+        <Panel>
+            <TextBlock x:Name="Iniciais" Classes="avatarIniciais" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Image x:Name="Imagem" Stretch="UniformToFill" />
+        </Panel>
+    </Border>
+</UserControl>
