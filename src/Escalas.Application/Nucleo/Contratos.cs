@@ -1,18 +1,4 @@
-using Escalas.Domain.Entidades;
-
 namespace Escalas.Application.Nucleo;
-
-public interface IPasswordHasher
-{
-    string Hash(string senha);
-    bool Verificar(string senha, string hash);
-}
-
-public interface IAutenticacaoService
-{
-    /// <summary>Retorna o usuário se login/senha conferem; caso contrário null.</summary>
-    Task<Usuario?> EntrarAsync(string login, string senha, CancellationToken ct = default);
-}
 
 /// <summary>Guarda a chave de criptografia do banco fora do .db, de forma protegida pelo SO.</summary>
 public interface IChaveStore

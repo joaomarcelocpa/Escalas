@@ -54,20 +54,13 @@ public sealed class FeriadoService(
         return true;
     }
 
-    public async Task<IReadOnlyList<FilialResumo>> ListarFiliaisAsync(CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Filiais.AsNoTracking().OrderBy(f => f.Nome)
-            .Select(f => new FilialResumo(f.Id, f.Nome, f.Cidade, f.UF)).ToListAsync(ct);
-    }
-
-    public async Task<IReadOnlyList<Feriado>> ListarLocaisAsync(int filialId, int ano, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Feriado>> ListarLocaisAsync(Filial filial, int ano, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var ini = new DateOnly(ano, 1, 1);
         var fim = new DateOnly(ano, 12, 31);
         return await db.Feriados.AsNoTracking()
-            .Where(f => f.FilialId == filialId && f.Abrangencia != AbrangenciaFeriado.Nacional && f.Data >= ini && f.Data <= fim)
+            .Where(f => f.Filial == filial && f.Abrangencia != AbrangenciaFeriado.Nacional && f.Data >= ini && f.Data <= fim)
             .OrderBy(f => f.Data).ToListAsync(ct);
     }
 
@@ -78,18 +71,15 @@ public sealed class FeriadoService(
         var nome = dados.Nome?.Trim();
         if (string.IsNullOrEmpty(nome)) throw new ArgumentException("Informe o nome do feriado.");
 
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var filial = await db.Filiais.FindAsync([dados.FilialId], ct)
-                     ?? throw new ArgumentException("Filial não encontrada.");
+        if (!Filiais.Existe(dados.Filial)) throw new ArgumentException("Filial não encontrada.");
 
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
         var feriado = new Feriado
         {
             Data = dados.Data,
             Nome = nome,
             Abrangencia = dados.Abrangencia,
-            UF = filial.UF,
-            Cidade = dados.Abrangencia == AbrangenciaFeriado.Municipal ? filial.Cidade : null,
-            FilialId = filial.Id,
+            Filial = dados.Filial,
         };
         db.Feriados.Add(feriado);
         await db.SaveChangesAsync(ct);
@@ -107,7 +97,7 @@ public sealed class FeriadoService(
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Feriado>> ObterAsync(int filialId, DateOnly inicio, DateOnly fim, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Feriado>> ObterAsync(Filial filial, DateOnly inicio, DateOnly fim, CancellationToken ct = default)
     {
         for (var ano = inicio.Year; ano <= fim.Year; ano++)
         {
@@ -115,17 +105,11 @@ public sealed class FeriadoService(
             await SincronizarAnoAsync(ano, ct: ct);
         }
 
+        // As filiais são fixas e não têm cidade/UF: feriados estaduais e municipais valem pela filial a que foram vinculados.
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var filial = await db.Filiais.AsNoTracking().FirstOrDefaultAsync(f => f.Id == filialId, ct);
-        var uf = filial?.UF;
-        var cidade = filial?.Cidade;
-
         return await db.Feriados.AsNoTracking()
-            .Where(f => f.Data >= inicio && f.Data <= fim && (
-                f.Abrangencia == AbrangenciaFeriado.Nacional
-                || (f.Abrangencia == AbrangenciaFeriado.Estadual && f.UF == uf && (f.FilialId == null || f.FilialId == filialId))
-                || (f.Abrangencia == AbrangenciaFeriado.Municipal && (f.FilialId == filialId
-                        || (f.FilialId == null && f.UF == uf && f.Cidade == cidade)))))
+            .Where(f => f.Data >= inicio && f.Data <= fim
+                        && (f.Abrangencia == AbrangenciaFeriado.Nacional || f.Filial == filial))
             .OrderBy(f => f.Data).ThenBy(f => f.Abrangencia)
             .ToListAsync(ct);
     }

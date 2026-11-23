@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctl="using:Escalas.Desktop.Controls"
              xmlns:vm="using:Escalas.Desktop.ViewModels"
-             xmlns:app="using:Escalas.Application.Calendario"
+             xmlns:ent="using:Escalas.Domain.Entidades"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
@@ -26,7 +26,7 @@
                 <ComboBox ItemsSource="{Binding Filiais}" SelectedItem="{Binding FilialSelecionada}"
                           MinWidth="180" VerticalAlignment="Center">
                     <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="app:FilialResumo">
+                        <DataTemplate x:DataType="ent:FilialOpcao">
                             <TextBlock Text="{Binding Nome}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
@@ -47,9 +47,6 @@
             </StackPanel>
         </Grid>
 
-        <TextBlock DockPanel.Dock="Top" Classes="secundario" IsVisible="{Binding SemFiliais}"
-                   Text="Nenhuma filial cadastrada. Cadastre uma filial para montar a escala." />
-
         <ItemsControl ItemsSource="{Binding Dias}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -58,7 +55,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:DiaViewModel">
-                    <Border Classes="dia" Classes.fechado="{Binding Fechado}" Classes.hoje="{Binding Hoje}" DragDrop.AllowDrop="True">
+                    <Border Classes="dia" Classes.fechado="{Binding Fechado}" Classes.hoje="{Binding Hoje}">
                         <DockPanel>
                             <!-- Cabeçalho do dia -->
                             <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="0,0,0,8">
@@ -77,8 +74,8 @@
                                 <TextBlock Classes="secundario" Text="Fechado" Margin="0,6,0,0" IsVisible="{Binding Fechado}" />
                             </StackPanel>
 
-                            <!-- Folga: quem não está escalado no dia. Recolhida por padrão; também é destino para remover do dia -->
-                            <Border DockPanel.Dock="Bottom" Classes="disponiveis" Tag="disponiveis" DragDrop.AllowDrop="True">
+                            <!-- Folga: quem não está escalado no dia. Recolhida por padrão; somente visualização -->
+                            <Border DockPanel.Dock="Bottom" Classes="disponiveis">
                                 <Expander IsExpanded="False" Padding="0" HorizontalAlignment="Stretch">
                                     <Expander.Header>
                                         <TextBlock Classes="secundario" Text="{Binding TextoDisponiveis}" />
@@ -87,7 +84,7 @@
                                         <ItemsControl ItemsSource="{Binding Disponiveis}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:FuncionarioItem">
-                                                    <Border Classes="func disponivel">
+                                                    <Border Classes="func disponivel leitura">
                                                         <Grid ColumnDefinitions="Auto,*">
                                                             <ctl:AvatarFuncionario Width="22" Height="22" Margin="0,0,6,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
                                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -103,22 +100,18 @@
                                 </Expander>
                             </Border>
 
-                            <!-- Escalados no dia (lista única; o setor aparece embaixo do nome) -->
+                            <!-- Escalados no dia (lista única, somente leitura; o setor aparece embaixo do nome) -->
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding Escalados}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:FuncionarioItem">
-                                            <Border Classes="func">
-                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Border Classes="func leitura">
+                                                <Grid ColumnDefinitions="Auto,*">
                                                     <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
                                                         <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
                                                     </StackPanel>
-                                                    <Button Grid.Column="2" Classes="link" Content="×" ToolTip.Tip="Remover deste dia"
-                                                            VerticalAlignment="Center"
-                                                            Command="{Binding $parent[UserControl].((vm:CalendarioViewModel)DataContext).RemoverEscaladoCommand}"
-                                                            CommandParameter="{Binding}" />
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>

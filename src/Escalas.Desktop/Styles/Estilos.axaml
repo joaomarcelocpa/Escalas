@@ -46,6 +46,53 @@
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
         <Setter Property="BorderThickness" Value="0,0,1,0" />
     </Style>
+    <Style Selector="Border.barraLateral">
+        <Setter Property="Width" Value="216" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingEspaco4}" />
+    </Style>
+    <!-- Recolhida: só ícones, com dica ao passar o mouse -->
+    <Style Selector="Border.barraLateral.recolhida">
+        <Setter Property="Width" Value="68" />
+        <Setter Property="Padding" Value="12,16" />
+    </Style>
+    <Style Selector="Border.barraLateral StackPanel.itemMenu">
+        <Setter Property="Orientation" Value="Horizontal" />
+        <Setter Property="Spacing" Value="10" />
+    </Style>
+    <!-- Ícones só aparecem com a barra recolhida; expandida mostra só o texto -->
+    <Style Selector="Border.barraLateral StackPanel.itemMenu > PathIcon">
+        <Setter Property="Width" Value="18" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.barraLateral.recolhida StackPanel.itemMenu > PathIcon">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Border.barraLateral StackPanel.itemMenu > TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.barraLateral.recolhida Button.menu">
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="0,9" />
+    </Style>
+    <Style Selector="Button.alternarSidebar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.alternarSidebar PathIcon">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+    </Style>
+    <Style Selector="Button.alternarSidebar:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HojeFundoBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+    <Style Selector="Border.barraLateral.recolhida Grid.topoBarra">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
     <Style Selector="Border.barraLateral Button.menu">
         <Setter Property="Padding" Value="12,9" />
         <Setter Property="FontWeight" Value="Medium" />

@@ -10,12 +10,12 @@ public class EscalaPadraoService(IDbContextFactory<EscalasDbContext> factory) : 
     public static readonly DayOfWeek[] DiasUteis =
         [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday];
 
-    public async Task<SemanaPadraoDto> ObterAsync(int filialId, CancellationToken ct = default)
+    public async Task<SemanaPadraoDto> ObterAsync(Filial filial, CancellationToken ct = default)
     {
         await using var db = await factory.CreateDbContextAsync(ct);
-        var setores = await db.Setores.AsNoTracking().Where(s => s.FilialId == filialId).OrderBy(s => s.Nome).ToListAsync(ct);
+        var setores = await db.Setores.AsNoTracking().Where(s => s.Filial == filial).OrderBy(s => s.Nome).ToListAsync(ct);
         var funcionarios = await db.Funcionarios.AsNoTracking()
-            .Where(f => f.FilialId == filialId && f.Ativo).OrderBy(f => f.Nome).ToListAsync(ct);
+            .Where(f => f.Filial == filial && f.Ativo).OrderBy(f => f.Nome).ToListAsync(ct);
         var ids = funcionarios.Select(f => f.Id).ToList();
         var alocados = (await db.EscalasPadrao.AsNoTracking().Where(p => ids.Contains(p.FuncionarioId)).ToListAsync(ct))
             .Select(p => (p.FuncionarioId, p.DiaSemana)).ToHashSet();
@@ -34,7 +34,7 @@ public class EscalaPadraoService(IDbContextFactory<EscalasDbContext> factory) : 
             return new DiaPadraoDto(dia, setoresDia, disponiveis);
         }).ToList();
 
-        return new SemanaPadraoDto(filialId, dias);
+        return new SemanaPadraoDto(filial, dias);
     }
 
     public async Task<ResultadoOperacao> AlocarAsync(int funcionarioId, DayOfWeek dia, CancellationToken ct = default)

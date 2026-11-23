@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Escalas.Application.Calendario;
+using Escalas.Domain.Entidades;
 
 namespace Escalas.Desktop.ViewModels;
 
@@ -38,41 +39,32 @@ public partial class EscalaSemanalViewModel : ViewModelBase
 {
     private static readonly SetorFiltro TodosSetores = new(null, "Todos os setores");
 
-    private readonly IEscalaService? _calendario;
     private readonly IEscalaPadraoService? _servico;
     private bool _atualizandoSetores;
 
-    public ObservableCollection<FilialResumo> Filiais { get; } = [];
+    /// <summary>Filiais fixas.</summary>
+    public IReadOnlyList<FilialOpcao> Filiais { get; } = global::Escalas.Domain.Entidades.Filiais.Todas;
     public ObservableCollection<SetorFiltro> Setores { get; } = [];
     public ObservableCollection<DiaPadraoViewModel> Dias { get; } = [];
 
-    [ObservableProperty] public partial FilialResumo? FilialSelecionada { get; set; }
+    [ObservableProperty] public partial FilialOpcao? FilialSelecionada { get; set; }
     [ObservableProperty] public partial SetorFiltro? SetorSelecionado { get; set; }
     [ObservableProperty] public partial string? Mensagem { get; set; }
-    [ObservableProperty] public partial bool SemFiliais { get; set; }
 
     /// <summary>Construtor para o previewer.</summary>
     public EscalaSemanalViewModel() { }
 
-    public EscalaSemanalViewModel(IEscalaService calendario, IEscalaPadraoService servico)
+    public EscalaSemanalViewModel(IEscalaPadraoService servico)
     {
-        _calendario = calendario;
         _servico = servico;
-        _ = CarregarAsync();
+        FilialSelecionada = Filiais[0];
     }
 
-    partial void OnFilialSelecionadaChanged(FilialResumo? value) => _ = RecarregarAsync(refazerSetores: true);
+    partial void OnFilialSelecionadaChanged(FilialOpcao? value) => _ = RecarregarAsync(refazerSetores: true);
 
     partial void OnSetorSelecionadoChanged(SetorFiltro? value)
     {
         if (!_atualizandoSetores) _ = RecarregarAsync();
-    }
-
-    private async Task CarregarAsync()
-    {
-        foreach (var f in await _calendario!.ListarFiliaisAsync()) Filiais.Add(f);
-        SemFiliais = Filiais.Count == 0;
-        FilialSelecionada = Filiais.FirstOrDefault();
     }
 
     private async Task RecarregarAsync(bool refazerSetores = false)

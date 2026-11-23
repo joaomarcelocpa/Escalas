@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Escalas.Application.Nucleo;
 using Escalas.Desktop.Modulos;
 using Escalas.Desktop.Navegacao;
+using Escalas.Desktop.Servicos;
 using Escalas.Desktop.ViewModels;
 using Escalas.Infrastructure.Modulos;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,26 +30,23 @@ public partial class App : Avalonia.Application
             CalendarioUiModulo.Registrar(services, menu);
             CadastrosUiModulo.Registrar(services, menu);
             services.AddSingleton<IReadOnlyList<ItemNavegacao>>(menu);
+            services.AddSingleton<IPreferenciasUi, PreferenciasUi>();
             services.AddSingleton<MainViewModel>();
             var sp = services.BuildServiceProvider();
 
-            // Startup: verifica/migra o banco e pede login; o shell só abre depois do login.
-            var login = new LoginViewModel(sp.GetRequiredService<IInicializadorBanco>(), () => sp.GetRequiredService<IAutenticacaoService>());
-            var janelaLogin = new LoginWindow { DataContext = login };
-            desktop.MainWindow = janelaLogin;
-            janelaLogin.Opened += async (_, _) => await login.CarregarAsync();
-            login.LoginConcluido += _ =>
-            {
-                var principal = new MainWindow { DataContext = sp.GetRequiredService<MainViewModel>() };
-                desktop.MainWindow = principal;
-                principal.Show();
-                janelaLogin.Close();
-            };
+            // Startup: verifica/migra o banco e abre direto a janela principal (sem login: uso local no PC da empresa).
+            // Roda fora do contexto da UI para não travar o await; nenhuma janela existe ainda.
+            var inicializacao = Task.Run(() => sp.GetRequiredService<IInicializadorBanco>().InicializarAsync()).GetAwaiter().GetResult();
+            var bancoPronto = inicializacao.Situacao == SituacaoBanco.Pronto;
+
+            desktop.MainWindow = bancoPronto
+                ? new MainWindow { DataContext = sp.GetRequiredService<MainViewModel>() }
+                : new AvisoBancoWindow(inicializacao.Mensagem ?? "Não foi possível abrir o banco de dados.");
 
             // Backup automático ao fechar o app (só se o banco chegou a ser aberto).
             desktop.Exit += (_, _) =>
             {
-                if (login.BancoPronto) sp.GetRequiredService<IBackupService>().BackupAutomatico();
+                if (bancoPronto) sp.GetRequiredService<IBackupService>().BackupAutomatico();
             };
         }
 

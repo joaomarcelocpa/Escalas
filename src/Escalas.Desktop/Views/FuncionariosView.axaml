@@ -34,7 +34,7 @@
                 <TextBlock Classes="rotulo" Text="Filial" />
                 <ComboBox ItemsSource="{Binding Filiais}" SelectedItem="{Binding FilialSelecionada}">
                     <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="ent:Filial">
+                        <DataTemplate x:DataType="ent:FilialOpcao">
                             <TextBlock Text="{Binding Nome}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>

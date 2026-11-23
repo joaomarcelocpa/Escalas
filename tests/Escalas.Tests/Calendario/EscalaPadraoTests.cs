@@ -24,11 +24,10 @@ public sealed class EscalaPadraoTests : IDisposable
         using (var db = _fabrica.CreateDbContext())
         {
             db.Database.EnsureCreated();
-            db.Filiais.Add(new Filial { Id = 1, Nome = "Centro", Cidade = "Recife", UF = "PE" });
-            db.Setores.Add(new Setor { Id = 1, FilialId = 1, Nome = "Caixa" });
+            db.Setores.Add(new Setor { Id = 1, Filial = Filial.Matriz, Nome = "Caixa" });
             db.Funcionarios.AddRange(
-                new Funcionario { Id = 1, FilialId = 1, SetorId = 1, Nome = "Ana" },
-                new Funcionario { Id = 2, FilialId = 1, SetorId = 1, Nome = "Bia" });
+                new Funcionario { Id = 1, Filial = Filial.Matriz, SetorId = 1, Nome = "Ana" },
+                new Funcionario { Id = 2, Filial = Filial.Matriz, SetorId = 1, Nome = "Bia" });
             db.SaveChanges();
         }
         _padrao = new EscalaPadraoService(_fabrica);
@@ -39,7 +38,7 @@ public sealed class EscalaPadraoTests : IDisposable
 
     private async Task<List<int>> EscaladosAsync(DateOnly data)
     {
-        var dia = (await _calendario.ObterSemanaAsync(1, data)).Dias.Single(d => d.Data == data);
+        var dia = (await _calendario.ObterSemanaAsync(Filial.Matriz, data)).Dias.Single(d => d.Data == data);
         return dia.Setores.SelectMany(s => s.Escalados).Select(f => f.Id).OrderBy(i => i).ToList();
     }
 
@@ -54,60 +53,30 @@ public sealed class EscalaPadraoTests : IDisposable
     }
 
     [Fact]
-    public async Task Remocao_NoCalendario_AfetaSoAquelaData()
+    public async Task ExcecoesGravadas_AfetamSoAquelaData()
     {
         await _padrao.AlocarAsync(1, DayOfWeek.Monday);
-
-        Assert.True((await _calendario.RemoverAsync(1, Segunda)).Ok);
-
-        Assert.Empty(await EscaladosAsync(Segunda));
-        Assert.Equal([1], await EscaladosAsync(SegundaSeguinte));
-    }
-
-    [Fact]
-    public async Task Inclusao_NoCalendario_AfetaSoAquelaData()
-    {
-        Assert.True((await _calendario.EscalarAsync(2, Segunda)).Ok);
+        await using (var db = _fabrica.CreateDbContext())
+        {
+            db.Escalas.AddRange(
+                new Escala { FuncionarioId = 1, Data = Segunda, Removido = true },
+                new Escala { FuncionarioId = 2, Data = Segunda });
+            db.SaveChanges();
+        }
 
         Assert.Equal([2], await EscaladosAsync(Segunda));
-        Assert.Empty(await EscaladosAsync(SegundaSeguinte));
-    }
-
-    [Fact]
-    public async Task EscalarDeNovoUmDiaRemovido_VoltaAoModelo()
-    {
-        await _padrao.AlocarAsync(1, DayOfWeek.Monday);
-        await _calendario.RemoverAsync(1, Segunda);
-
-        Assert.True((await _calendario.EscalarAsync(1, Segunda)).Ok);
-
-        Assert.Equal([1], await EscaladosAsync(Segunda));
-        Assert.False((await _calendario.EscalarAsync(1, Segunda)).Ok); // já escalado
-    }
-
-    [Fact]
-    public async Task Mover_NoCalendario_RetiraDaOrigemEIncluiNoDestino()
-    {
-        await _padrao.AlocarAsync(1, DayOfWeek.Monday);
-        var terca = Segunda.AddDays(1);
-
-        Assert.True((await _calendario.MoverAsync(1, Segunda, terca)).Ok);
-
-        Assert.Empty(await EscaladosAsync(Segunda));
-        Assert.Equal([1], await EscaladosAsync(terca));
-        Assert.Equal([1], await EscaladosAsync(SegundaSeguinte)); // semana seguinte segue o modelo
-        Assert.Empty(await EscaladosAsync(SegundaSeguinte.AddDays(1)));
+        Assert.Equal([1], await EscaladosAsync(SegundaSeguinte));
     }
 
     [Fact]
     public async Task DiaFechado_NaoMostraEscaladosDoModelo()
     {
         await _padrao.AlocarAsync(1, DayOfWeek.Monday);
-        await _calendario.DefinirDiaFechadoAsync(1, Segunda, true);
+        await _calendario.DefinirDiaFechadoAsync(Filial.Matriz, Segunda, true);
 
         Assert.Empty(await EscaladosAsync(Segunda));
 
-        await _calendario.DefinirDiaFechadoAsync(1, Segunda, false);
+        await _calendario.DefinirDiaFechadoAsync(Filial.Matriz, Segunda, false);
         Assert.Equal([1], await EscaladosAsync(Segunda));
     }
 
@@ -131,13 +100,13 @@ public sealed class EscalaPadraoTests : IDisposable
         Assert.True((await _padrao.MoverAsync(1, DayOfWeek.Monday, DayOfWeek.Wednesday)).Ok);
         Assert.False((await _padrao.AlocarAsync(1, DayOfWeek.Wednesday)).Ok);
 
-        var semana = await _padrao.ObterAsync(1);
+        var semana = await _padrao.ObterAsync(Filial.Matriz);
         Assert.Equal(6, semana.Dias.Count);
         Assert.DoesNotContain(semana.Dias.Single(d => d.Dia == DayOfWeek.Wednesday).Disponiveis, f => f.Id == 1);
 
         Assert.True((await _padrao.DesalocarAsync(1, DayOfWeek.Wednesday)).Ok);
         Assert.True((await _padrao.AlocarTodosOsDiasAsync(2)).Ok);
-        Assert.All((await _padrao.ObterAsync(1)).Dias,
+        Assert.All((await _padrao.ObterAsync(Filial.Matriz)).Dias,
             d => Assert.Contains(d.Setores.SelectMany(s => s.Escalados), f => f.Id == 2));
     }
 }

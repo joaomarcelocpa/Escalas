@@ -13,7 +13,7 @@ public static class CalendarioUiModulo
         services.AddSingleton<IDialogoConfirmacao, DialogoConfirmacao>();
         services.AddTransient<CalendarioViewModel>();
         services.AddTransient<EscalaSemanalViewModel>();
-        menu.Add(new ItemNavegacao("Calendário", typeof(CalendarioViewModel)));
-        menu.Add(new ItemNavegacao("Escala semanal", typeof(EscalaSemanalViewModel)));
+        menu.Add(new ItemNavegacao("Calendário", typeof(CalendarioViewModel), Icones.Calendario));
+        menu.Add(new ItemNavegacao("Escala semanal", typeof(EscalaSemanalViewModel), Icones.EscalaSemanal));
     }
 }

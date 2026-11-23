@@ -8,19 +8,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Escalas.Infrastructure.Nucleo;
 
-public class BcryptPasswordHasher : IPasswordHasher
-{
-    private const int Custo = 12;
-
-    public string Hash(string senha) => BCrypt.Net.BCrypt.HashPassword(senha, Custo);
-
-    public bool Verificar(string senha, string hash)
-    {
-        try { return BCrypt.Net.BCrypt.Verify(senha, hash); }
-        catch (BCrypt.Net.SaltParseException) { return false; }
-    }
-}
-
 /// <summary>Locais de dados da instalação. ESCALAS_DB sobrescreve o caminho do banco.</summary>
 public class CaminhosApp
 {
@@ -30,10 +17,16 @@ public class CaminhosApp
     public string CaminhoBanco { get; }
     public string DiretorioBackups { get; }
 
+    /// <summary>Pasta do executável. Um escalas.db/escalas.chave aqui é importado no primeiro uso (pacote de instalação).</summary>
+    public string DiretorioPacote { get; }
+
+    public const string NomeBancoPacote = "escalas.db";
+    public const string NomeChavePacote = "escalas.chave";
+
     /// <summary>Arquivo de chave entregue pelo Admin, ao lado do .db.</summary>
     public string CaminhoChaveEntrega => Path.ChangeExtension(CaminhoBanco, ".chave");
 
-    public CaminhosApp(string? caminhoBanco = null, string? diretorioDados = null)
+    public CaminhosApp(string? caminhoBanco = null, string? diretorioDados = null, string? diretorioPacote = null)
     {
         var env = Environment.GetEnvironmentVariable(VariavelBanco);
         DiretorioDados = diretorioDados
@@ -41,6 +34,7 @@ public class CaminhosApp
         CaminhoBanco = caminhoBanco
             ?? (string.IsNullOrWhiteSpace(env) ? Path.Combine(DiretorioDados, "escalas.db") : Path.GetFullPath(env));
         DiretorioBackups = Path.Combine(Path.GetDirectoryName(CaminhoBanco)!, "backups");
+        DiretorioPacote = diretorioPacote ?? AppContext.BaseDirectory;
     }
 }
 
@@ -162,30 +156,15 @@ public class BackupService(CaminhosApp caminhos, BackupOpcoes opcoes) : IBackupS
     }
 }
 
-public class AutenticacaoService(IDbContextFactory<EscalasDbContext> factory, IPasswordHasher hasher) : IAutenticacaoService
-{
-    // Hash válido, verificado quando o usuário não existe (evita diferença de tempo).
-    private static readonly string HashFalso = BCrypt.Net.BCrypt.HashPassword("x", 12);
-
-    public async Task<Usuario?> EntrarAsync(string login, string senha, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(login) || string.IsNullOrEmpty(senha)) return null;
-        await using var db = await factory.CreateDbContextAsync(ct);
-        var loginLimpo = login.Trim();
-        var usuario = await db.Usuarios.AsNoTracking().FirstOrDefaultAsync(u => u.Login == loginLimpo, ct);
-        if (usuario is null)
-        {
-            hasher.Verificar(senha, HashFalso);
-            return null;
-        }
-        return hasher.Verificar(senha, usuario.SenhaHash) ? usuario : null;
-    }
-}
-
 public class InicializadorBanco(CaminhosApp caminhos, IChaveStore chaves, IBackupService backup) : IInicializadorBanco
 {
     public async Task<ResultadoInicializacao> InicializarAsync(CancellationToken ct = default)
     {
+        try { ImportarPacoteSeNecessario(); }
+        catch (Exception ex)
+        {
+            return new(SituacaoBanco.Erro, $"Não foi possível instalar o banco que veio junto com o aplicativo: {ex.Message}");
+        }
         if (!File.Exists(caminhos.CaminhoBanco))
             return new(SituacaoBanco.BancoAusente,
                 $"Nenhum banco de dados foi encontrado em:\n{caminhos.CaminhoBanco}\n\nCopie o arquivo escalas.db fornecido pelo seu fornecedor para essa pasta e abra o aplicativo novamente.");
@@ -202,11 +181,15 @@ public class InicializadorBanco(CaminhosApp caminhos, IChaveStore chaves, IBacku
             // Lê o esquema: falha com SqliteException se a chave não corresponder ao arquivo.
             var aplicadas = await db.Database.GetAppliedMigrationsAsync(ct);
             _ = aplicadas.Count();
-            if ((await db.Database.GetPendingMigrationsAsync(ct)).Any())
+            var pendentes = (await db.Database.GetPendingMigrationsAsync(ct)).ToList();
+            if (pendentes.Count > 0)
             {
+                if (await VerificacaoFiliaisFixas.VerificarAsync(db, pendentes, ct) is { } aviso)
+                    return new(SituacaoBanco.Erro, aviso);
                 backup.BackupPreMigracao();
                 await db.Database.MigrateAsync(ct);
             }
+            ApagarChaveDoPacote();
             return new(SituacaoBanco.Pronto);
         }
         catch (SqliteException ex)
@@ -217,6 +200,39 @@ public class InicializadorBanco(CaminhosApp caminhos, IChaveStore chaves, IBacku
         {
             return new(SituacaoBanco.Erro, $"Erro ao preparar o banco de dados: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Primeiro uso no PC da empresa: se ainda não há banco na pasta de dados e o pacote trouxe
+    /// escalas.db (e escalas.chave) ao lado do executável, copia o banco e a chave para a pasta de dados.
+    /// Nunca sobrescreve um banco existente. A chave é guardada protegida pelo SO e a cópia do pacote é apagada.
+    /// </summary>
+    private void ImportarPacoteSeNecessario()
+    {
+        if (File.Exists(caminhos.CaminhoBanco)) return;
+        var bancoPacote = Path.Combine(caminhos.DiretorioPacote, CaminhosApp.NomeBancoPacote);
+        if (!File.Exists(bancoPacote)) return;
+        if (Path.GetFullPath(bancoPacote) == Path.GetFullPath(caminhos.CaminhoBanco)) return;
+
+        Directory.CreateDirectory(Path.GetDirectoryName(caminhos.CaminhoBanco)!);
+        var chavePacote = Path.Combine(caminhos.DiretorioPacote, CaminhosApp.NomeChavePacote);
+        // Banco novo nesta máquina: a chave do pacote é a que vale (substitui qualquer chave antiga guardada).
+        if (File.Exists(chavePacote) && File.ReadAllText(chavePacote).Trim() is { Length: > 0 } chave)
+            chaves.Salvar(chave);
+        File.Copy(bancoPacote, caminhos.CaminhoBanco);
+    }
+
+    /// <summary>Depois que a chave foi importada, apaga a cópia em texto que veio ao lado do executável.</summary>
+    private void ApagarChaveDoPacote()
+    {
+        var chavePacote = Path.Combine(caminhos.DiretorioPacote, CaminhosApp.NomeChavePacote);
+        try
+        {
+            if (File.Exists(chavePacote) && chaves.Obter() == File.ReadAllText(chavePacote).Trim())
+                File.Delete(chavePacote);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private void ImportarChaveSeNecessario()
@@ -231,15 +247,13 @@ public class InicializadorBanco(CaminhosApp caminhos, IChaveStore chaves, IBacku
 
 public record ResultadoCriacao(string CaminhoBanco, string CaminhoChave);
 
-/// <summary>Gerador de banco: cria um .db cifrado, com migrations, uma única Empresa e o admin inicial.</summary>
-public class CriadorDeEmpresa(IPasswordHasher hasher)
+/// <summary>Gerador de banco: cria um .db cifrado, com migrations, uma única Empresa.</summary>
+public class CriadorDeEmpresa
 {
-    public async Task<ResultadoCriacao> CriarAsync(string nome, string documento, string adminLogin, string adminSenha, string saida, CancellationToken ct = default)
+    public async Task<ResultadoCriacao> CriarAsync(string nome, string documento, string saida, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(nome)) throw new CriacaoEmpresaException("Informe o nome da empresa.");
         if (string.IsNullOrWhiteSpace(documento)) throw new CriacaoEmpresaException("Informe o documento da empresa.");
-        if (string.IsNullOrWhiteSpace(adminLogin)) throw new CriacaoEmpresaException("Informe o login do administrador.");
-        if (adminSenha is null || adminSenha.Length < 6) throw new CriacaoEmpresaException("A senha do administrador deve ter ao menos 6 caracteres.");
 
         // saída terminando em .db = arquivo; caso contrário, diretório que receberá escalas.db e escalas.chave
         var caminhoBanco = saida.EndsWith(".db", StringComparison.OrdinalIgnoreCase)
@@ -258,7 +272,6 @@ public class CriadorDeEmpresa(IPasswordHasher hasher)
                 if (await db.Empresas.AnyAsync(ct))
                     throw new CriacaoEmpresaException("O banco já possui uma empresa; só é permitida uma por banco.");
                 db.Empresas.Add(new Empresa { Id = 1, Nome = nome.Trim(), Documento = documento.Trim() });
-                db.Usuarios.Add(new Usuario { Login = adminLogin.Trim(), SenhaHash = hasher.Hash(adminSenha), Papel = PapelUsuario.Administrador });
                 await db.SaveChangesAsync(ct);
             }
             await File.WriteAllTextAsync(caminhoChave, chave, ct);
@@ -274,5 +287,47 @@ public class CriadorDeEmpresa(IPasswordHasher hasher)
         }
         SqliteConnection.ClearAllPools();
         return new(caminhoBanco, caminhoChave);
+    }
+}
+
+public class EmpacotamentoException(string message) : Exception(message);
+
+/// <summary>
+/// Monta o pacote para o PC da empresa: copia o banco atual e grava a chave dele (escalas.chave) na pasta indicada,
+/// ao lado do executável. O app importa os dois sozinho no primeiro uso.
+/// </summary>
+public class EmpacotadorInstalacao(CaminhosApp caminhos, IChaveStore chaves)
+{
+    public async Task<ResultadoCriacao> EmpacotarAsync(string pasta, CancellationToken ct = default)
+    {
+        if (!File.Exists(caminhos.CaminhoBanco))
+            throw new EmpacotamentoException($"Banco não encontrado em {caminhos.CaminhoBanco}.");
+        var chave = chaves.Obter()
+            ?? (File.Exists(caminhos.CaminhoChaveEntrega) ? File.ReadAllText(caminhos.CaminhoChaveEntrega).Trim() : null);
+        if (string.IsNullOrEmpty(chave))
+            throw new EmpacotamentoException("A chave do banco não foi encontrada nesta máquina. Abra o app uma vez com esse banco antes de empacotar.");
+
+        // Confere que a chave abre o banco antes de gerar o pacote.
+        string? aviso;
+        try
+        {
+            await using var db = new EscalasDbContext(BancoFabrica.Opcoes(caminhos.CaminhoBanco, chave));
+            _ = (await db.Database.GetAppliedMigrationsAsync(ct)).Count();
+            // Não entrega um banco que o app do cliente não conseguiria atualizar (filiais sem correspondência).
+            aviso = await VerificacaoFiliaisFixas.VerificarAsync(db, await db.Database.GetPendingMigrationsAsync(ct), ct);
+        }
+        catch (SqliteException)
+        {
+            throw new EmpacotamentoException($"A chave desta máquina não abre o banco {caminhos.CaminhoBanco}.");
+        }
+        if (aviso is not null) throw new EmpacotamentoException(aviso);
+        SqliteConnection.ClearAllPools();
+
+        Directory.CreateDirectory(pasta);
+        var destinoBanco = Path.Combine(pasta, CaminhosApp.NomeBancoPacote);
+        var destinoChave = Path.Combine(pasta, CaminhosApp.NomeChavePacote);
+        File.Copy(caminhos.CaminhoBanco, destinoBanco, overwrite: true);
+        await File.WriteAllTextAsync(destinoChave, chave, ct);
+        return new(destinoBanco, destinoChave);
     }
 }

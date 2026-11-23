@@ -2,9 +2,7 @@ using Escalas.Domain.Entidades;
 
 namespace Escalas.Application.Feriados;
 
-public record FilialResumo(int Id, string Nome, string Cidade, string UF);
-
-public record FeriadoLocalDados(int FilialId, DateOnly Data, string Nome, AbrangenciaFeriado Abrangencia);
+public record FeriadoLocalDados(Filial Filial, DateOnly Data, string Nome, AbrangenciaFeriado Abrangencia);
 
 /// <summary>Cache anual de feriados nacionais e CRUD de feriados estaduais/municipais por filial.</summary>
 public interface IFeriadoService
@@ -15,12 +13,10 @@ public interface IFeriadoService
     /// </summary>
     Task<bool> SincronizarAnoAsync(int ano, bool forcar = false, CancellationToken ct = default);
 
-    Task<IReadOnlyList<FilialResumo>> ListarFiliaisAsync(CancellationToken ct = default);
-
     /// <summary>Feriados estaduais/municipais cadastrados para a filial no ano.</summary>
-    Task<IReadOnlyList<Feriado>> ListarLocaisAsync(int filialId, int ano, CancellationToken ct = default);
+    Task<IReadOnlyList<Feriado>> ListarLocaisAsync(Filial filial, int ano, CancellationToken ct = default);
 
-    /// <summary>Apenas Estadual ou Municipal; UF/Cidade são preenchidos a partir da filial.</summary>
+    /// <summary>Apenas Estadual ou Municipal; o feriado vale só para a filial informada.</summary>
     Task<Feriado> AdicionarLocalAsync(FeriadoLocalDados dados, CancellationToken ct = default);
 
     Task RemoverLocalAsync(int feriadoId, CancellationToken ct = default);

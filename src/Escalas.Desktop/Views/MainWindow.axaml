@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
         x:Class="Escalas.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/icone.ico"
         Width="1100" Height="700" MinWidth="800" MinHeight="500"
         Title="{Binding Titulo}">
 
@@ -16,22 +16,56 @@
     </Design.DataContext>
 
     <DockPanel>
-        <Border Classes="barraLateral" DockPanel.Dock="Left" Width="216" Padding="{DynamicResource PaddingEspaco4}">
+        <!-- Largura e padding vêm do estilo (Border.barraLateral / .recolhida) para alternar entre expandida e só ícones -->
+        <Border Classes="barraLateral" Classes.recolhida="{Binding SidebarRecolhida}" DockPanel.Dock="Left">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Spacing="{DynamicResource Espaco2}" Margin="0,0,0,28">
-                    <Image Source="avares://Escalas.Desktop/Assets/logo.png" Width="176" HorizontalAlignment="Left" RenderOptions.BitmapInterpolationMode="HighQuality" />                </StackPanel>
+                <Grid DockPanel.Dock="Top" Classes="topoBarra" ColumnDefinitions="*,Auto" Margin="0,0,0,28">
+                    <Image Source="avares://Escalas.Desktop/Assets/logo.png" Stretch="Uniform" MaxWidth="148"
+                           HorizontalAlignment="Left" VerticalAlignment="Center"
+                           RenderOptions.BitmapInterpolationMode="HighQuality"
+                           IsVisible="{Binding !SidebarRecolhida}" />
+                    <Button Grid.Column="1" Classes="alternarSidebar"
+                            Command="{Binding AlternarSidebarCommand}"
+                            ToolTip.Tip="{Binding DicaAlternarSidebar}"
+                            AutomationProperties.Name="{Binding DicaAlternarSidebar}">
+                        <PathIcon Data="{Binding IconeAlternarSidebar}" />
+                    </Button>
+                </Grid>
                 <!-- Ações de rodapé (ex.: exportar backup) entram aqui -->
                 <StackPanel DockPanel.Dock="Bottom" x:Name="RodapeMenu" Spacing="{DynamicResource Espaco1}">
                     <TextBlock Classes="secundario" Text="{Binding StatusBackup}" TextWrapping="Wrap"
-                               IsVisible="{Binding StatusBackup, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <Button Classes="menu" Content="Exportar backup" Click="ExportarBackup_Click" />
+                               ToolTip.Tip="{Binding StatusBackup}">
+                        <TextBlock.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="!SidebarRecolhida" />
+                                <Binding Path="StatusBackup" Converter="{x:Static StringConverters.IsNotNullOrEmpty}" />
+                            </MultiBinding>
+                        </TextBlock.IsVisible>
+                    </TextBlock>
+                    <Button Classes="menu" Click="ExportarBackup_Click"
+                            ToolTip.Tip="Exportar backup" ToolTip.ServiceEnabled="{Binding SidebarRecolhida}"
+                            AutomationProperties.Name="Exportar backup">
+                        <StackPanel Classes="itemMenu">
+                            <PathIcon Data="{Binding IconeBackup}" />
+                            <TextBlock Text="Exportar backup" IsVisible="{Binding !SidebarRecolhida}" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
                 <ItemsControl ItemsSource="{Binding Menu}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="nav:ItemNavegacao">
-                            <Button Classes="menu" Content="{Binding Titulo}"
+                            <Button Classes="menu"
                                     Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).NavegarCommand}"
-                                    CommandParameter="{Binding}" />
+                                    CommandParameter="{Binding}"
+                                    ToolTip.Tip="{Binding Titulo}"
+                                    ToolTip.ServiceEnabled="{Binding $parent[Window].((vm:MainViewModel)DataContext).SidebarRecolhida}"
+                                    AutomationProperties.Name="{Binding Titulo}">
+                                <StackPanel Classes="itemMenu">
+                                    <PathIcon Data="{Binding Geometria}" />
+                                    <TextBlock Text="{Binding Titulo}"
+                                               IsVisible="{Binding !$parent[Window].((vm:MainViewModel)DataContext).SidebarRecolhida}" />
+                                </StackPanel>
+                            </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

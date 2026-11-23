@@ -5,11 +5,6 @@ using Escalas.Desktop.ViewModels;
 
 namespace Escalas.Desktop.Views;
 
-public partial class FiliaisView : UserControl
-{
-    public FiliaisView() => InitializeComponent();
-}
-
 public partial class SetoresView : UserControl
 {
     public SetoresView() => InitializeComponent();

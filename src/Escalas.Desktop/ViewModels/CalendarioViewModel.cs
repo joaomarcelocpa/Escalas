@@ -5,11 +5,12 @@ using Escalas.Application.Calendario;
 using System.Globalization;
 using Escalas.Desktop.Servicos;
 using Escalas.Domain.Calendario;
+using Escalas.Domain.Entidades;
 
 namespace Escalas.Desktop.ViewModels;
 
-/// <summary>Funcionário exibido em um dia. <see cref="Origem"/> é nulo quando vem da lista de disponíveis.</summary>
-public record FuncionarioItem(int Id, string Nome, string? Detalhe, DateOnly? Origem, byte[]? Foto = null);
+/// <summary>Funcionário exibido em um dia (somente leitura).</summary>
+public record FuncionarioItem(int Id, string Nome, string? Detalhe, byte[]? Foto = null);
 
 /// <summary>Opção do filtro de setor; <see cref="Id"/> nulo significa todos os setores.</summary>
 public record SetorFiltro(int? Id, string Nome);
@@ -27,10 +28,10 @@ public class DiaViewModel
         Fechado = dto.Fechado;
         TextoFechar = dto.Fechado ? "Reabrir" : "Fechar";
         Escalados = dto.Setores.Where(s => setorId is null || s.SetorId == setorId)
-            .SelectMany(s => s.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, s.Nome, dto.Data, f.Foto)))
+            .SelectMany(s => s.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, s.Nome, f.Foto)))
             .OrderBy(f => f.Nome).ToList();
         Hoje = dto.Data == DateOnly.FromDateTime(DateTime.Today);
-        Disponiveis = dto.Disponiveis.Where(f => setorId is null || f.SetorId == setorId).Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, null, f.Foto)).ToList();
+        Disponiveis = dto.Disponiveis.Where(f => setorId is null || f.SetorId == setorId).Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, f.Foto)).ToList();
         TextoDisponiveis = $"Folga ({Disponiveis.Count})";
     }
 
@@ -58,7 +59,8 @@ public partial class CalendarioViewModel : ViewModelBase
     private readonly IDialogoConfirmacao? _dialogo;
     private DateOnly _inicioSemana = RegraEscala.InicioDaSemana(DateOnly.FromDateTime(DateTime.Today));
 
-    public ObservableCollection<FilialResumo> Filiais { get; } = [];
+    /// <summary>Filiais fixas.</summary>
+    public IReadOnlyList<FilialOpcao> Filiais { get; } = global::Escalas.Domain.Entidades.Filiais.Todas;
     public ObservableCollection<DiaViewModel> Dias { get; } = [];
     public ObservableCollection<SetorFiltro> Setores { get; } = [];
 
@@ -69,16 +71,13 @@ public partial class CalendarioViewModel : ViewModelBase
     public partial SetorFiltro? SetorSelecionado { get; set; }
 
     [ObservableProperty]
-    public partial FilialResumo? FilialSelecionada { get; set; }
+    public partial FilialOpcao? FilialSelecionada { get; set; }
 
     [ObservableProperty]
     public partial string TituloSemana { get; set; } = "";
 
     [ObservableProperty]
     public partial string? Mensagem { get; set; }
-
-    [ObservableProperty]
-    public partial bool SemFiliais { get; set; }
 
     /// <summary>Construtor para o previewer.</summary>
     public CalendarioViewModel() => AtualizarTitulo();
@@ -88,23 +87,14 @@ public partial class CalendarioViewModel : ViewModelBase
         _servico = servico;
         _dialogo = dialogo;
         AtualizarTitulo();
-        _ = CarregarAsync();
+        FilialSelecionada = Filiais[0];
     }
 
-    partial void OnFilialSelecionadaChanged(FilialResumo? value) => _ = RecarregarAsync(refazerSetores: true);
+    partial void OnFilialSelecionadaChanged(FilialOpcao? value) => _ = RecarregarAsync(refazerSetores: true);
 
     partial void OnSetorSelecionadoChanged(SetorFiltro? value)
     {
         if (!_atualizandoSetores) _ = RecarregarAsync();
-    }
-
-    private async Task CarregarAsync()
-    {
-        var filiais = await _servico!.ListarFiliaisAsync();
-        Filiais.Clear();
-        foreach (var f in filiais) Filiais.Add(f);
-        SemFiliais = Filiais.Count == 0;
-        FilialSelecionada = Filiais.FirstOrDefault();
     }
 
     private async Task RecarregarAsync(bool refazerSetores = false)
@@ -163,46 +153,12 @@ public partial class CalendarioViewModel : ViewModelBase
         await Aplicar(_servico.DefinirDiaFechadoAsync(FilialSelecionada.Id, dia.Data, fechar));
     }
 
-    [RelayCommand]
-    private async Task RemoverEscaladoAsync(FuncionarioItem item)
-    {
-        if (item.Origem is { } data) await SoltarEmDisponiveisAsync(item.Id, data);
-    }
-
     private static string Texto(DateOnly data) => data.ToString("ddd dd/MM", PtBr);
-
-    private string NomeDe(int funcionarioId) =>
-        Dias.SelectMany(d => d.Escalados.Concat(d.Disponiveis))
-            .FirstOrDefault(f => f.Id == funcionarioId)?.Nome ?? "o funcionário";
 
     private async Task<bool> Confirmar(string titulo, string mensagem, string textoConfirmar)
     {
         Mensagem = null;
         return _dialogo is null || await _dialogo.ConfirmarAsync(titulo, mensagem + "\n\nVale apenas para este dia; o modelo semanal não muda.", textoConfirmar);
-    }
-
-    /// <summary>Chamado pela View ao soltar um funcionário sobre um dia.</summary>
-    public async Task SoltarEmDiaAsync(int funcionarioId, DateOnly? origem, DateOnly destino)
-    {
-        if (_servico is null) return;
-        var nome = NomeDe(funcionarioId);
-        if (origem is null)
-        {
-            if (!await Confirmar("Incluir no dia", $"Incluir {nome} em {Texto(destino)}?", "Incluir")) return;
-            await Aplicar(_servico.EscalarAsync(funcionarioId, destino));
-            return;
-        }
-        if (origem == destino) return;
-        if (!await Confirmar("Mover funcionário", $"Mover {nome} de {Texto(origem.Value)} para {Texto(destino)}?", "Mover")) return;
-        await Aplicar(_servico.MoverAsync(funcionarioId, origem.Value, destino));
-    }
-
-    /// <summary>Chamado pela View ao soltar um funcionário escalado na lista de disponíveis.</summary>
-    public async Task SoltarEmDisponiveisAsync(int funcionarioId, DateOnly? origem)
-    {
-        if (_servico is null || origem is null) return;
-        if (!await Confirmar("Remover do dia", $"Remover {NomeDe(funcionarioId)} de {Texto(origem.Value)}?", "Remover")) return;
-        await Aplicar(_servico.RemoverAsync(funcionarioId, origem.Value));
     }
 
     private async Task Aplicar(Task<ResultadoOperacao> operacao)

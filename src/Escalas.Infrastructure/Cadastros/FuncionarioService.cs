@@ -7,11 +7,11 @@ namespace Escalas.Infrastructure.Cadastros;
 
 public class FuncionarioService(IDbContextFactory<EscalasDbContext> factory) : IFuncionarioService
 {
-    public async Task<IReadOnlyList<Funcionario>> ListarAsync(int? filialId = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Funcionario>> ListarAsync(Filial? filial = null, CancellationToken ct = default)
     {
         await using var db = await factory.CreateDbContextAsync(ct);
         var q = db.Funcionarios.AsNoTracking().Include(f => f.Setor).AsQueryable();
-        if (filialId is int fid) q = q.Where(f => f.FilialId == fid);
+        if (filial is { } fil) q = q.Where(f => f.Filial == fil);
         return await q.OrderBy(f => f.Nome).ToListAsync(ct);
     }
 
@@ -19,11 +19,12 @@ public class FuncionarioService(IDbContextFactory<EscalasDbContext> factory) : I
     {
         var nome = (funcionario.Nome ?? "").Trim();
         if (nome.Length == 0) throw new CadastroException("Informe o nome do funcionário.");
+        if (!Filiais.Existe(funcionario.Filial)) throw new CadastroException("Selecione uma filial válida.");
 
         await using var db = await factory.CreateDbContextAsync(ct);
         var setor = await db.Setores.AsNoTracking().FirstOrDefaultAsync(s => s.Id == funcionario.SetorId, ct)
             ?? throw new CadastroException("Selecione um setor.");
-        if (setor.FilialId != funcionario.FilialId)
+        if (setor.Filial != funcionario.Filial)
             throw new CadastroException("O setor selecionado não pertence à filial do funcionário.");
 
         Funcionario alvo;
@@ -37,12 +38,12 @@ public class FuncionarioService(IDbContextFactory<EscalasDbContext> factory) : I
             alvo = await db.Funcionarios.FindAsync([funcionario.Id], ct) ?? throw new CadastroException("Funcionário não encontrado.");
         }
         alvo.Nome = nome;
-        alvo.FilialId = funcionario.FilialId;
+        alvo.Filial = funcionario.Filial;
         alvo.SetorId = funcionario.SetorId;
         alvo.Ativo = funcionario.Ativo;
         alvo.Foto = funcionario.Foto;
         await db.SaveChangesAsync(ct);
-        return new Funcionario { Id = alvo.Id, Nome = alvo.Nome, FilialId = alvo.FilialId, SetorId = alvo.SetorId, Ativo = alvo.Ativo, Foto = alvo.Foto };
+        return new Funcionario { Id = alvo.Id, Nome = alvo.Nome, Filial = alvo.Filial, SetorId = alvo.SetorId, Ativo = alvo.Ativo, Foto = alvo.Foto };
     }
 
     public async Task ExcluirAsync(int id, CancellationToken ct = default)

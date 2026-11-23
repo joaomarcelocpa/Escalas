@@ -5,6 +5,7 @@ using Escalas.Infrastructure.Nucleo;
 using Escalas.Infrastructure.Persistencia;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Escalas.Tests.Nucleo;
@@ -14,10 +15,11 @@ public sealed class AmbienteTemp : IDisposable
     public string Pasta { get; } = Path.Combine(Path.GetTempPath(), "escalas-tests-" + Guid.NewGuid().ToString("N"));
     public string Entrega => Path.Combine(Pasta, "entrega");
     public string Dados => Path.Combine(Pasta, "dados");
+    public string Pacote => Path.Combine(Pasta, "pacote");
 
     public AmbienteTemp() => Directory.CreateDirectory(Pasta);
 
-    public CaminhosApp CaminhosCliente() => new(Path.Combine(Dados, "escalas.db"), Dados);
+    public CaminhosApp CaminhosCliente() => new(Path.Combine(Dados, "escalas.db"), Dados, Pacote);
 
     public void Dispose()
     {
@@ -28,10 +30,8 @@ public sealed class AmbienteTemp : IDisposable
 
 public class NucleoTests
 {
-    private static readonly BcryptPasswordHasher Hasher = new();
-
-    private static async Task<ResultadoCriacao> CriarEmpresa(AmbienteTemp amb, string senha = "segredo123") =>
-        await new CriadorDeEmpresa(Hasher).CriarAsync("Padaria Exemplo", "00.000.000/0001-00", "admin", senha, amb.Entrega);
+    private static async Task<ResultadoCriacao> CriarEmpresa(AmbienteTemp amb) =>
+        await new CriadorDeEmpresa().CriarAsync("Padaria Exemplo", "00.000.000/0001-00", amb.Entrega);
 
     /// <summary>Simula a entrega ao cliente: copia .db e .chave para a pasta de dados.</summary>
     private static void Entregar(AmbienteTemp amb, ResultadoCriacao r)
@@ -45,17 +45,7 @@ public class NucleoTests
         new ServiceCollection().AdicionarNucleo(caminhos).BuildServiceProvider();
 
     [Fact]
-    public void Hash_verifica_senha_correta_e_rejeita_incorreta()
-    {
-        var hash = Hasher.Hash("abc12345");
-        Assert.NotEqual("abc12345", hash);
-        Assert.True(Hasher.Verificar("abc12345", hash));
-        Assert.False(Hasher.Verificar("errada", hash));
-        Assert.False(Hasher.Verificar("abc12345", "não-é-hash"));
-    }
-
-    [Fact]
-    public async Task Admin_cria_banco_e_login_funciona_apos_entrega()
+    public async Task Admin_cria_banco_e_app_abre_apos_entrega()
     {
         using var amb = new AmbienteTemp();
         var r = await CriarEmpresa(amb);
@@ -65,14 +55,6 @@ public class NucleoTests
         await using var sp = Provedor(caminhos);
         var init = await sp.GetRequiredService<IInicializadorBanco>().InicializarAsync();
         Assert.Equal(SituacaoBanco.Pronto, init.Situacao);
-
-        var auth = sp.GetRequiredService<IAutenticacaoService>();
-        var usuario = await auth.EntrarAsync("admin", "segredo123");
-        Assert.NotNull(usuario);
-        Assert.Equal(PapelUsuario.Administrador, usuario.Papel);
-        Assert.NotEqual("segredo123", usuario.SenhaHash);
-        Assert.Null(await auth.EntrarAsync("admin", "errada"));
-        Assert.Null(await auth.EntrarAsync("inexistente", "segredo123"));
 
         var factory = sp.GetRequiredService<IDbContextFactory<EscalasDbContext>>();
         await using var db = await factory.CreateDbContextAsync();
@@ -168,7 +150,7 @@ public class NucleoTests
         await CriarEmpresa(amb);
         await Assert.ThrowsAsync<CriacaoEmpresaException>(() => CriarEmpresa(amb));
         await Assert.ThrowsAsync<CriacaoEmpresaException>(() =>
-            new CriadorDeEmpresa(Hasher).CriarAsync("X", "1", "admin", "123", Path.Combine(amb.Pasta, "outra")));
+            new CriadorDeEmpresa().CriarAsync("X", "  ", Path.Combine(amb.Pasta, "outra")));
     }
 
     [Fact]
@@ -255,7 +237,7 @@ public class NucleoTests
         {
             c.Open();
             using var cmd = c.CreateCommand();
-            cmd.CommandText = "SELECT count(*) FROM sqlite_master WHERE name = 'Usuario'";
+            cmd.CommandText = "SELECT count(*) FROM sqlite_master WHERE name = 'Empresa'";
             Assert.Equal(0L, (long)cmd.ExecuteScalar()!);
             cmd.CommandText = "SELECT Id FROM Legado";
             Assert.Equal(42L, (long)cmd.ExecuteScalar()!);
@@ -265,6 +247,88 @@ public class NucleoTests
         var factory = sp.GetRequiredService<IDbContextFactory<EscalasDbContext>>();
         await using var db = await factory.CreateDbContextAsync();
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+    }
+
+    [Fact]
+    public async Task Banco_antigo_com_usuarios_migra_e_remove_tabela_de_login()
+    {
+        using var amb = new AmbienteTemp();
+        Directory.CreateDirectory(amb.Dados);
+        var caminhos = amb.CaminhosCliente();
+        var chave = BancoFabrica.GerarChave();
+
+        // Banco no esquema anterior à remoção do login, com um usuário cadastrado.
+        await using (var antigo = new EscalasDbContext(BancoFabrica.Opcoes(caminhos.CaminhoBanco, chave)))
+        {
+            await antigo.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>().MigrateAsync("20261016142416_EscalaPadrao");
+            await antigo.Database.ExecuteSqlRawAsync("INSERT INTO Usuarios (Login, SenhaHash, Papel) VALUES ('admin', 'hash', 1)");
+        }
+        SqliteConnection.ClearAllPools();
+
+        await using var sp = Provedor(caminhos);
+        sp.GetRequiredService<IChaveStore>().Salvar(chave);
+        Assert.Equal(SituacaoBanco.Pronto, (await sp.GetRequiredService<IInicializadorBanco>().InicializarAsync()).Situacao);
+
+        Assert.Single(Directory.GetFiles(caminhos.DiretorioBackups, "pre-migracao-*.db"));
+        var factory = sp.GetRequiredService<IDbContextFactory<EscalasDbContext>>();
+        await using var db = await factory.CreateDbContextAsync();
+        var conexao = db.Database.GetDbConnection();
+        await conexao.OpenAsync();
+        await using var cmd = conexao.CreateCommand();
+        cmd.CommandText = "SELECT count(*) FROM sqlite_master WHERE name = 'Usuarios'";
+        Assert.Equal(0L, (long)(await cmd.ExecuteScalarAsync())!);
+    }
+
+    [Fact]
+    public async Task Pacote_ao_lado_do_exe_e_importado_no_primeiro_uso_e_chave_apagada()
+    {
+        using var amb = new AmbienteTemp();
+        var r = await CriarEmpresa(amb);
+        // Máquina de origem: banco já em uso, com a chave guardada.
+        var origem = new CaminhosApp(r.CaminhoBanco, Path.Combine(amb.Pasta, "origem"), Path.Combine(amb.Pasta, "nada"));
+        new ChaveStore(origem).Salvar((await File.ReadAllTextAsync(r.CaminhoChave)).Trim());
+        File.Delete(r.CaminhoChave);
+
+        await new EmpacotadorInstalacao(origem, new ChaveStore(origem)).EmpacotarAsync(amb.Pacote);
+        Assert.True(File.Exists(Path.Combine(amb.Pacote, "escalas.db")));
+        Assert.True(File.Exists(Path.Combine(amb.Pacote, "escalas.chave")));
+
+        // PC da empresa: sem banco na pasta de dados, só o pacote ao lado do executável.
+        var caminhos = amb.CaminhosCliente();
+        await using var sp = Provedor(caminhos);
+        Assert.Equal(SituacaoBanco.Pronto, (await sp.GetRequiredService<IInicializadorBanco>().InicializarAsync()).Situacao);
+
+        Assert.True(File.Exists(caminhos.CaminhoBanco));
+        Assert.False(File.Exists(Path.Combine(amb.Pacote, "escalas.chave")));
+        var factory = sp.GetRequiredService<IDbContextFactory<EscalasDbContext>>();
+        await using var db = await factory.CreateDbContextAsync();
+        Assert.Equal("Padaria Exemplo", Assert.Single(await db.Empresas.ToListAsync()).Nome);
+    }
+
+    [Fact]
+    public async Task Pacote_nao_sobrescreve_banco_ja_instalado()
+    {
+        using var amb = new AmbienteTemp();
+        var r = await CriarEmpresa(amb);
+        Entregar(amb, r);
+        Directory.CreateDirectory(amb.Pacote);
+        await File.WriteAllTextAsync(Path.Combine(amb.Pacote, "escalas.db"), "outro banco");
+        var original = await File.ReadAllBytesAsync(Path.Combine(amb.Dados, "escalas.db"));
+
+        await using var sp = Provedor(amb.CaminhosCliente());
+        Assert.Equal(SituacaoBanco.Pronto, (await sp.GetRequiredService<IInicializadorBanco>().InicializarAsync()).Situacao);
+        Assert.Equal(original, await File.ReadAllBytesAsync(Path.Combine(amb.Dados, "escalas.db")));
+    }
+
+    [Fact]
+    public async Task Empacotar_sem_chave_falha_com_mensagem()
+    {
+        using var amb = new AmbienteTemp();
+        var r = await CriarEmpresa(amb);
+        File.Delete(r.CaminhoChave);
+        var origem = new CaminhosApp(r.CaminhoBanco, Path.Combine(amb.Pasta, "origem"), Path.Combine(amb.Pasta, "nada"));
+        await Assert.ThrowsAsync<EmpacotamentoException>(() =>
+            new EmpacotadorInstalacao(origem, new ChaveStore(origem)).EmpacotarAsync(amb.Pacote));
     }
 
     [Fact]

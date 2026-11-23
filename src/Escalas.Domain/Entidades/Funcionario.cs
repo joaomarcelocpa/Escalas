@@ -3,8 +3,7 @@ namespace Escalas.Domain.Entidades;
 public class Funcionario
 {
     public int Id { get; set; }
-    public int FilialId { get; set; }
-    public Filial? Filial { get; set; }
+    public Filial Filial { get; set; }
     public int SetorId { get; set; }
     public Setor? Setor { get; set; }
     public string Nome { get; set; } = "";

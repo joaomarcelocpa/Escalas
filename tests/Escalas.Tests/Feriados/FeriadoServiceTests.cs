@@ -47,8 +47,8 @@ public class FeriadoServiceTests : IDisposable
     [Fact]
     public async Task Forcar_substitui_nacionais_sem_duplicar_nem_tocar_locais()
     {
-        var filial = _banco.AdicionarFilial("Matriz", "Campinas", "SP");
-        await _svc.AdicionarLocalAsync(new(filial.Id, new DateOnly(2026, 7, 14), "Aniversário", AbrangenciaFeriado.Municipal));
+        var filial = Filial.Matriz;
+        await _svc.AdicionarLocalAsync(new(filial, new DateOnly(2026, 7, 14), "Aniversário", AbrangenciaFeriado.Municipal));
         await _svc.SincronizarAnoAsync(2026);
         _api.PorAno[2026] = [new(new DateOnly(2026, 1, 1), "Ano Novo")];
 
@@ -74,12 +74,12 @@ public class FeriadoServiceTests : IDisposable
     [Fact]
     public async Task Offline_depois_de_baixado_continua_servindo_o_cache()
     {
-        var filial = _banco.AdicionarFilial("Matriz", "Campinas", "SP");
+        var filial = Filial.Matriz;
         await _svc.SincronizarAnoAsync(2026);
         _api.Offline = true;
         _api.Chamadas.Clear();
 
-        var lista = await _svc.ObterAsync(filial.Id, Ini, Fim);
+        var lista = await _svc.ObterAsync(filial, Ini, Fim);
 
         Assert.Equal(2, lista.Count);
         Assert.Empty(_api.Chamadas);
@@ -100,25 +100,25 @@ public class FeriadoServiceTests : IDisposable
     [Fact]
     public async Task Consulta_falha_de_rede_retorna_o_que_ha_em_cache_e_faz_backoff()
     {
-        var filial = _banco.AdicionarFilial("Matriz", "Campinas", "SP");
+        var filial = Filial.Matriz;
         _api.Offline = true;
 
-        Assert.Empty(await _svc.ObterAsync(filial.Id, Ini, Fim));
-        Assert.Empty(await _svc.ObterAsync(filial.Id, Ini, Fim));
+        Assert.Empty(await _svc.ObterAsync(filial, Ini, Fim));
+        Assert.Empty(await _svc.ObterAsync(filial, Ini, Fim));
         Assert.Single(_api.Chamadas); // segunda consulta respeitou a espera
 
         _relogio.Agora += TimeSpan.FromMinutes(6);
         _api.Offline = false;
 
-        Assert.Equal(2, (await _svc.ObterAsync(filial.Id, Ini, Fim)).Count);
+        Assert.Equal(2, (await _svc.ObterAsync(filial, Ini, Fim)).Count);
     }
 
     [Fact]
     public async Task Consulta_baixa_automaticamente_o_ano_ausente()
     {
-        var filial = _banco.AdicionarFilial("Matriz", "Campinas", "SP");
+        var filial = Filial.Matriz;
 
-        var lista = await _svc.ObterAsync(filial.Id, new DateOnly(2026, 12, 20), new DateOnly(2026, 12, 31));
+        var lista = await _svc.ObterAsync(filial, new DateOnly(2026, 12, 20), new DateOnly(2026, 12, 31));
 
         Assert.Equal(["Natal"], lista.Select(f => f.Nome));
     }
@@ -128,24 +128,24 @@ public class FeriadoServiceTests : IDisposable
     [Fact]
     public async Task Consulta_respeita_escopos_nacional_estadual_municipal()
     {
-        var campinas = _banco.AdicionarFilial("Campinas", "Campinas", "SP");
-        var santos = _banco.AdicionarFilial("Santos", "Santos", "SP");
-        var rio = _banco.AdicionarFilial("Rio", "Rio de Janeiro", "RJ");
+        var campinas = Filial.Matriz;
+        var santos = Filial.Matozinhos;
+        var rio = Filial.Deposito;
         await _svc.SincronizarAnoAsync(2026);
-        await _svc.AdicionarLocalAsync(new(campinas.Id, new DateOnly(2026, 7, 9), "Revolução Constitucionalista", AbrangenciaFeriado.Estadual));
-        await _svc.AdicionarLocalAsync(new(campinas.Id, new DateOnly(2026, 7, 14), "Aniversário de Campinas", AbrangenciaFeriado.Municipal));
-        await _svc.AdicionarLocalAsync(new(rio.Id, new DateOnly(2026, 4, 23), "São Jorge", AbrangenciaFeriado.Estadual));
+        await _svc.AdicionarLocalAsync(new(campinas, new DateOnly(2026, 7, 9), "Revolução Constitucionalista", AbrangenciaFeriado.Estadual));
+        await _svc.AdicionarLocalAsync(new(campinas, new DateOnly(2026, 7, 14), "Aniversário de Campinas", AbrangenciaFeriado.Municipal));
+        await _svc.AdicionarLocalAsync(new(rio, new DateOnly(2026, 4, 23), "São Jorge", AbrangenciaFeriado.Estadual));
 
-        var nomesCampinas = (await _svc.ObterAsync(campinas.Id, Ini, Fim)).Select(f => f.Nome).ToList();
-        var nomesSantos = (await _svc.ObterAsync(santos.Id, Ini, Fim)).Select(f => f.Nome).ToList();
-        var nomesRio = (await _svc.ObterAsync(rio.Id, Ini, Fim)).Select(f => f.Nome).ToList();
+        var nomesCampinas = (await _svc.ObterAsync(campinas, Ini, Fim)).Select(f => f.Nome).ToList();
+        var nomesSantos = (await _svc.ObterAsync(santos, Ini, Fim)).Select(f => f.Nome).ToList();
+        var nomesRio = (await _svc.ObterAsync(rio, Ini, Fim)).Select(f => f.Nome).ToList();
 
         Assert.Contains("Natal", nomesCampinas);
         Assert.Contains("Aniversário de Campinas", nomesCampinas);
         Assert.Contains("Revolução Constitucionalista", nomesCampinas);
         Assert.DoesNotContain("São Jorge", nomesCampinas);
 
-        // mesma UF, outra cidade: estadual de SP vinculado à filial de Campinas não vaza para Santos
+        // feriado local vale só para a filial a que foi vinculado
         Assert.DoesNotContain("Aniversário de Campinas", nomesSantos);
         Assert.DoesNotContain("Revolução Constitucionalista", nomesSantos);
         Assert.Contains("Natal", nomesSantos);
@@ -157,10 +157,10 @@ public class FeriadoServiceTests : IDisposable
     [Fact]
     public async Task Consulta_filtra_pelo_intervalo_e_ordena_por_data()
     {
-        var f = _banco.AdicionarFilial("Matriz", "Campinas", "SP");
+        var f = Filial.Matriz;
         await _svc.SincronizarAnoAsync(2026);
 
-        var lista = await _svc.ObterAsync(f.Id, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31));
+        var lista = await _svc.ObterAsync(f, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31));
 
         Assert.Equal(["Confraternização mundial"], lista.Select(x => x.Nome));
     }
@@ -168,39 +168,39 @@ public class FeriadoServiceTests : IDisposable
     // ---- CRUD local ----
 
     [Fact]
-    public async Task Adicionar_local_preenche_uf_e_cidade_da_filial()
+    public async Task Adicionar_local_vincula_a_filial_fixa()
     {
-        var f = _banco.AdicionarFilial("Matriz", "Campinas", "SP");
+        var f = Filial.FC;
 
-        var mun = await _svc.AdicionarLocalAsync(new(f.Id, new DateOnly(2026, 7, 14), "  Aniversário  ", AbrangenciaFeriado.Municipal));
-        var est = await _svc.AdicionarLocalAsync(new(f.Id, new DateOnly(2026, 7, 9), "9 de Julho", AbrangenciaFeriado.Estadual));
+        var mun = await _svc.AdicionarLocalAsync(new(f, new DateOnly(2026, 7, 14), "  Aniversário  ", AbrangenciaFeriado.Municipal));
+        var est = await _svc.AdicionarLocalAsync(new(f, new DateOnly(2026, 7, 9), "9 de Julho", AbrangenciaFeriado.Estadual));
 
         Assert.Equal("Aniversário", mun.Nome);
-        Assert.Equal(("SP", "Campinas", f.Id), (mun.UF, mun.Cidade, mun.FilialId));
-        Assert.Equal(("SP", null, f.Id), (est.UF, est.Cidade, est.FilialId));
+        Assert.Equal(Filial.FC, mun.Filial);
+        Assert.Equal(Filial.FC, est.Filial);
     }
 
     [Fact]
     public async Task Adicionar_local_valida_entrada()
     {
-        var f = _banco.AdicionarFilial("Matriz", "Campinas", "SP");
+        var f = Filial.Matriz;
 
-        await Assert.ThrowsAsync<ArgumentException>(() => _svc.AdicionarLocalAsync(new(f.Id, Ini, "X", AbrangenciaFeriado.Nacional)));
-        await Assert.ThrowsAsync<ArgumentException>(() => _svc.AdicionarLocalAsync(new(f.Id, Ini, "  ", AbrangenciaFeriado.Estadual)));
-        await Assert.ThrowsAsync<ArgumentException>(() => _svc.AdicionarLocalAsync(new(999, Ini, "X", AbrangenciaFeriado.Estadual)));
+        await Assert.ThrowsAsync<ArgumentException>(() => _svc.AdicionarLocalAsync(new(f, Ini, "X", AbrangenciaFeriado.Nacional)));
+        await Assert.ThrowsAsync<ArgumentException>(() => _svc.AdicionarLocalAsync(new(f, Ini, "  ", AbrangenciaFeriado.Estadual)));
+        await Assert.ThrowsAsync<ArgumentException>(() => _svc.AdicionarLocalAsync(new((Filial)999, Ini, "X", AbrangenciaFeriado.Estadual)));
     }
 
     [Fact]
     public async Task Listar_locais_filtra_por_filial_e_ano_e_exclui_nacionais()
     {
-        var a = _banco.AdicionarFilial("A", "Campinas", "SP");
-        var b = _banco.AdicionarFilial("B", "Santos", "SP");
+        var a = Filial.Matriz;
+        var b = Filial.Interiores;
         await _svc.SincronizarAnoAsync(2026);
-        await _svc.AdicionarLocalAsync(new(a.Id, new DateOnly(2026, 7, 14), "A-2026", AbrangenciaFeriado.Municipal));
-        await _svc.AdicionarLocalAsync(new(a.Id, new DateOnly(2027, 7, 14), "A-2027", AbrangenciaFeriado.Municipal));
-        await _svc.AdicionarLocalAsync(new(b.Id, new DateOnly(2026, 8, 1), "B-2026", AbrangenciaFeriado.Municipal));
+        await _svc.AdicionarLocalAsync(new(a, new DateOnly(2026, 7, 14), "A-2026", AbrangenciaFeriado.Municipal));
+        await _svc.AdicionarLocalAsync(new(a, new DateOnly(2027, 7, 14), "A-2027", AbrangenciaFeriado.Municipal));
+        await _svc.AdicionarLocalAsync(new(b, new DateOnly(2026, 8, 1), "B-2026", AbrangenciaFeriado.Municipal));
 
-        var lista = await _svc.ListarLocaisAsync(a.Id, 2026);
+        var lista = await _svc.ListarLocaisAsync(a, 2026);
 
         Assert.Equal(["A-2026"], lista.Select(x => x.Nome));
     }
@@ -208,12 +208,12 @@ public class FeriadoServiceTests : IDisposable
     [Fact]
     public async Task Remover_local_apaga_e_recusa_nacional()
     {
-        var f = _banco.AdicionarFilial("Matriz", "Campinas", "SP");
+        var f = Filial.Matriz;
         await _svc.SincronizarAnoAsync(2026);
-        var local = await _svc.AdicionarLocalAsync(new(f.Id, new DateOnly(2026, 7, 14), "Aniversário", AbrangenciaFeriado.Municipal));
+        var local = await _svc.AdicionarLocalAsync(new(f, new DateOnly(2026, 7, 14), "Aniversário", AbrangenciaFeriado.Municipal));
 
         await _svc.RemoverLocalAsync(local.Id);
-        Assert.Empty(await _svc.ListarLocaisAsync(f.Id, 2026));
+        Assert.Empty(await _svc.ListarLocaisAsync(f, 2026));
 
         int idNacional;
         using (var db = _banco.CreateDbContext()) idNacional = db.Feriados.First(x => x.Abrangencia == AbrangenciaFeriado.Nacional).Id;

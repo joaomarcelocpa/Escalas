@@ -9,16 +9,16 @@ namespace Escalas.Desktop.ViewModels;
 
 public partial class FuncionariosViewModel : CadastroViewModelBase
 {
-    private readonly IFilialService _filiais;
     private readonly ISetorService _setores;
     private readonly IFuncionarioService _servico;
     private int _id;
 
-    public ObservableCollection<Filial> Filiais { get; } = [];
+    /// <summary>Filiais fixas.</summary>
+    public IReadOnlyList<FilialOpcao> Filiais { get; } = global::Escalas.Domain.Entidades.Filiais.Todas;
     public ObservableCollection<Setor> Setores { get; } = [];
     public ObservableCollection<Funcionario> Itens { get; } = [];
 
-    [ObservableProperty] public partial Filial? FilialSelecionada { get; set; }
+    [ObservableProperty] public partial FilialOpcao? FilialSelecionada { get; set; }
     [ObservableProperty] public partial Funcionario? Selecionado { get; set; }
     [ObservableProperty] public partial Setor? SetorSelecionado { get; set; }
     [ObservableProperty] public partial string Nome { get; set; } = "";
@@ -45,19 +45,14 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
     [RelayCommand]
     private void RemoverFoto() => Foto = null;
 
-    public FuncionariosViewModel(IFilialService filiais, ISetorService setores, IFuncionarioService servico)
+    public FuncionariosViewModel(ISetorService setores, IFuncionarioService servico)
     {
-        _filiais = filiais;
         _setores = setores;
         _servico = servico;
-        _ = ExecutarAsync(async () =>
-        {
-            foreach (var f in await _filiais.ListarAsync()) Filiais.Add(f);
-            FilialSelecionada = Filiais.FirstOrDefault();
-        });
+        FilialSelecionada = Filiais[0];
     }
 
-    partial void OnFilialSelecionadaChanged(Filial? value) => _ = ExecutarAsync(async () =>
+    partial void OnFilialSelecionadaChanged(FilialOpcao? value) => _ = ExecutarAsync(async () =>
     {
         Setores.Clear();
         if (value is not null)
@@ -98,7 +93,7 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
         {
             Id = _id,
             Nome = Nome,
-            FilialId = FilialSelecionada.Id,
+            Filial = FilialSelecionada.Id,
             SetorId = SetorSelecionado?.Id ?? 0,
             Ativo = Ativo,
             Foto = Foto,

@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Escalas.Desktop.Views.AvisoBancoWindow"
+        Icon="/Assets/icone.ico"
+        Width="440" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Title="Escalas">
+
+    <!-- Exibida só quando o banco não pode ser aberto (ausente, sem chave ou com erro). -->
+    <StackPanel Margin="{DynamicResource PaddingEspaco6}" Spacing="{DynamicResource Espaco4}">
+        <StackPanel Spacing="{DynamicResource Espaco1}">
+            <Image Source="avares://Escalas.Desktop/Assets/logo.png" Width="220" HorizontalAlignment="Center" Margin="0,0,0,8" RenderOptions.BitmapInterpolationMode="HighQuality" />
+            <TextBlock Classes="secundario" Text="Controle de escalas de trabalho" HorizontalAlignment="Center" />
+        </StackPanel>
+        <Border Classes="painel">
+            <TextBlock x:Name="Mensagem" TextWrapping="Wrap" />
+        </Border>
+        <Button x:Name="Fechar" Classes="destaque" Content="Fechar" IsDefault="True" IsCancel="True"
+                HorizontalAlignment="Right" />
+    </StackPanel>
+</Window>

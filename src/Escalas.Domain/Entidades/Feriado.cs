@@ -10,6 +10,6 @@ public class Feriado
     public AbrangenciaFeriado Abrangencia { get; set; }
     public string? UF { get; set; }
     public string? Cidade { get; set; }
-    public int? FilialId { get; set; }
+    /// <summary>Filial do feriado local (estadual/municipal). Nulo nos nacionais.</summary>
     public Filial? Filial { get; set; }
 }

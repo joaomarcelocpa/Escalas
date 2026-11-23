@@ -8,29 +8,24 @@ namespace Escalas.Desktop.ViewModels;
 
 public partial class SetoresViewModel : CadastroViewModelBase
 {
-    private readonly IFilialService _filiais;
     private readonly ISetorService _servico;
     private int _id;
 
-    public ObservableCollection<Filial> Filiais { get; } = [];
+    /// <summary>Filiais fixas.</summary>
+    public IReadOnlyList<FilialOpcao> Filiais { get; } = global::Escalas.Domain.Entidades.Filiais.Todas;
     public ObservableCollection<Setor> Itens { get; } = [];
 
-    [ObservableProperty] public partial Filial? FilialSelecionada { get; set; }
+    [ObservableProperty] public partial FilialOpcao? FilialSelecionada { get; set; }
     [ObservableProperty] public partial Setor? Selecionado { get; set; }
     [ObservableProperty] public partial string Nome { get; set; } = "";
 
-    public SetoresViewModel(IFilialService filiais, ISetorService servico)
+    public SetoresViewModel(ISetorService servico)
     {
-        _filiais = filiais;
         _servico = servico;
-        _ = ExecutarAsync(async () =>
-        {
-            foreach (var f in await _filiais.ListarAsync()) Filiais.Add(f);
-            FilialSelecionada = Filiais.FirstOrDefault();
-        });
+        FilialSelecionada = Filiais[0];
     }
 
-    partial void OnFilialSelecionadaChanged(Filial? value) => _ = ExecutarAsync(() => CarregarAsync(null));
+    partial void OnFilialSelecionadaChanged(FilialOpcao? value) => _ = ExecutarAsync(() => CarregarAsync(null));
 
     partial void OnSelecionadoChanged(Setor? value)
     {
@@ -61,7 +56,7 @@ public partial class SetoresViewModel : CadastroViewModelBase
         var salvo = await _servico.SalvarAsync(new Setor
         {
             Id = _id,
-            FilialId = FilialSelecionada.Id,
+            Filial = FilialSelecionada.Id,
             Nome = Nome,
         });
         await CarregarAsync(null);

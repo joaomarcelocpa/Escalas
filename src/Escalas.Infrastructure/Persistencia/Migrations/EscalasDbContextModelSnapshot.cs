@@ -29,12 +29,12 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.Property<bool>("Fechado")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("FilialId")
+                    b.Property<int>("Filial")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FilialId", "Data")
+                    b.HasIndex("Filial", "Data")
                         .IsUnique();
 
                     b.ToTable("DiasFilial");
@@ -119,7 +119,7 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.Property<DateOnly>("Data")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("FilialId")
+                    b.Property<int?>("Filial")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Nome")
@@ -133,33 +133,9 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
 
                     b.HasIndex("Data");
 
-                    b.HasIndex("FilialId");
+                    b.HasIndex("Filial");
 
                     b.ToTable("Feriados");
-                });
-
-            modelBuilder.Entity("Escalas.Domain.Entidades.Filial", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Cidade")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("UF")
-                        .IsRequired()
-                        .HasMaxLength(2)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Filiais");
                 });
 
             modelBuilder.Entity("Escalas.Domain.Entidades.Funcionario", b =>
@@ -171,7 +147,7 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.Property<bool>("Ativo")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("FilialId")
+                    b.Property<int>("Filial")
                         .HasColumnType("INTEGER");
 
                     b.Property<byte[]>("Foto")
@@ -186,7 +162,7 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FilialId");
+                    b.HasIndex("Filial");
 
                     b.HasIndex("SetorId");
 
@@ -199,7 +175,7 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("FilialId")
+                    b.Property<int>("Filial")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("MinimoFuncionarios")
@@ -211,45 +187,9 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FilialId");
+                    b.HasIndex("Filial");
 
                     b.ToTable("Setores");
-                });
-
-            modelBuilder.Entity("Escalas.Domain.Entidades.Usuario", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Login")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Papel")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("SenhaHash")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Login")
-                        .IsUnique();
-
-                    b.ToTable("Usuarios");
-                });
-
-            modelBuilder.Entity("Escalas.Domain.Entidades.DiaFilial", b =>
-                {
-                    b.HasOne("Escalas.Domain.Entidades.Filial", "Filial")
-                        .WithMany()
-                        .HasForeignKey("FilialId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Filial");
                 });
 
             modelBuilder.Entity("Escalas.Domain.Entidades.Escala", b =>
@@ -274,49 +214,15 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.Navigation("Funcionario");
                 });
 
-            modelBuilder.Entity("Escalas.Domain.Entidades.Feriado", b =>
-                {
-                    b.HasOne("Escalas.Domain.Entidades.Filial", "Filial")
-                        .WithMany()
-                        .HasForeignKey("FilialId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("Filial");
-                });
-
             modelBuilder.Entity("Escalas.Domain.Entidades.Funcionario", b =>
                 {
-                    b.HasOne("Escalas.Domain.Entidades.Filial", "Filial")
-                        .WithMany()
-                        .HasForeignKey("FilialId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Escalas.Domain.Entidades.Setor", "Setor")
                         .WithMany()
                         .HasForeignKey("SetorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Filial");
-
                     b.Navigation("Setor");
-                });
-
-            modelBuilder.Entity("Escalas.Domain.Entidades.Setor", b =>
-                {
-                    b.HasOne("Escalas.Domain.Entidades.Filial", "Filial")
-                        .WithMany("Setores")
-                        .HasForeignKey("FilialId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Filial");
-                });
-
-            modelBuilder.Entity("Escalas.Domain.Entidades.Filial", b =>
-                {
-                    b.Navigation("Setores");
                 });
 #pragma warning restore 612, 618
         }

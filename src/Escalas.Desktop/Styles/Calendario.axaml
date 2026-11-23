@@ -75,6 +75,13 @@
     <Style Selector="Border.func:pointerover">
         <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
     </Style>
+    <!-- Cartões do calendário são só leitura: sem cursor de arrastar nem destaque ao passar o mouse -->
+    <Style Selector="Border.func.leitura">
+        <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+    <Style Selector="Border.func.leitura:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+    </Style>
 
     <Style Selector="Border.disponiveis">
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />

@@ -6,8 +6,6 @@ namespace Escalas.Infrastructure.Persistencia;
 public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbContext(options)
 {
     public DbSet<Empresa> Empresas => Set<Empresa>();
-    public DbSet<Usuario> Usuarios => Set<Usuario>();
-    public DbSet<Filial> Filiais => Set<Filial>();
     public DbSet<Setor> Setores => Set<Setor>();
     public DbSet<Funcionario> Funcionarios => Set<Funcionario>();
     public DbSet<DiaFilial> DiasFilial => Set<DiaFilial>();
@@ -15,6 +13,10 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
     public DbSet<EscalaPadrao> EscalasPadrao => Set<EscalaPadrao>();
     public DbSet<Feriado> Feriados => Set<Feriado>();
 
+    /// <summary>
+    /// Filiais são fixas (enum <see cref="Filial"/>), gravadas como número na coluna "Filial".
+    /// A tabela antiga de filiais foi preservada como "FiliaisAntigas" pela migration FiliaisFixas (fora do modelo).
+    /// </summary>
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.Entity<Empresa>(e =>
@@ -24,36 +26,22 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
             e.Property(x => x.Nome).IsRequired();
         });
 
-        b.Entity<Usuario>(e =>
-        {
-            e.HasIndex(x => x.Login).IsUnique();
-            e.Property(x => x.Login).IsRequired();
-            e.Property(x => x.SenhaHash).IsRequired();
-        });
-
-        b.Entity<Filial>(e =>
-        {
-            e.Property(x => x.Nome).IsRequired();
-            e.Property(x => x.UF).HasMaxLength(2);
-        });
-
         b.Entity<Setor>(e =>
         {
-            e.HasOne(x => x.Filial).WithMany(f => f.Setores).HasForeignKey(x => x.FilialId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.Filial);
             e.Property(x => x.Nome).IsRequired();
         });
 
         b.Entity<Funcionario>(e =>
         {
-            e.HasOne(x => x.Filial).WithMany().HasForeignKey(x => x.FilialId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.Filial);
             e.HasOne(x => x.Setor).WithMany().HasForeignKey(x => x.SetorId).OnDelete(DeleteBehavior.Restrict);
             e.Property(x => x.Nome).IsRequired();
         });
 
         b.Entity<DiaFilial>(e =>
         {
-            e.HasIndex(x => new { x.FilialId, x.Data }).IsUnique();
-            e.HasOne(x => x.Filial).WithMany().HasForeignKey(x => x.FilialId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.Filial, x.Data }).IsUnique();
         });
 
         b.Entity<Escala>(e =>
@@ -72,7 +60,7 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
         {
             e.HasIndex(x => x.Data);
             e.Property(x => x.Nome).IsRequired();
-            e.HasOne(x => x.Filial).WithMany().HasForeignKey(x => x.FilialId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.Filial);
         });
     }
 }

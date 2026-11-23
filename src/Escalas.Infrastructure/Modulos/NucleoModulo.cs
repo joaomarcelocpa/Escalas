@@ -8,17 +8,15 @@ namespace Escalas.Infrastructure.Modulos;
 
 public static class NucleoModulo
 {
-    /// <summary>Serviços do núcleo: caminhos, chave, banco cifrado, autenticação, backup e inicialização.</summary>
+    /// <summary>Serviços do núcleo: caminhos, chave, banco cifrado, backup e inicialização.</summary>
     public static IServiceCollection AdicionarNucleo(this IServiceCollection services, CaminhosApp? caminhos = null, BackupOpcoes? backup = null)
     {
         BancoFabrica.Iniciar();
         services.AddSingleton(caminhos ?? new CaminhosApp());
         services.AddSingleton(backup ?? new BackupOpcoes());
-        services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IChaveStore, ChaveStore>();
         services.AddSingleton<IBackupService, BackupService>();
         services.AddSingleton<IInicializadorBanco, InicializadorBanco>();
-        services.AddSingleton<IAutenticacaoService, AutenticacaoService>();
         // A chave é lida na primeira criação do contexto (depois do InicializadorBanco importá-la).
         services.AddDbContextFactory<EscalasDbContext>((sp, o) =>
         {

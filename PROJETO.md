@@ -14,15 +14,14 @@ Software **desktop nativo** (não é web) para gestão de escalas de trabalho. C
 - Não há servidor, API própria nem acesso em rede. Nada de endpoints para o app.
 
 ### Gerador de banco (`Escalas.Admin`)
-Ferramenta de linha de comando que, dado o nome e o documento da empresa e as credenciais do administrador inicial:
+Ferramenta de linha de comando que, dado o nome e o documento da empresa:
 1. Cria o arquivo `.db` (SQLite) já com todas as migrations aplicadas.
 2. Insere a **única linha** da tabela `Empresa`.
-3. Cria o usuário administrador inicial (senha com hash).
-4. Grava o arquivo no local de saída indicado, pronto para ser copiado para `%AppData%/Escalas` na máquina do cliente (ou ao lado do executável na entrega, conforme definido pelo desenvolvedor).
+3. Grava o arquivo no local de saída indicado, pronto para ser copiado para `%AppData%/Escalas` na máquina do cliente (ou ao lado do executável na entrega, conforme definido pelo desenvolvedor).
 
 Exemplo de uso desejado:
 ```
-escalas-admin criar --nome "Padaria Exemplo" --documento 00.000.000/0001-00 --admin-login admin --saida ./saida/padaria-exemplo
+escalas-admin criar --nome "Padaria Exemplo" --documento 00.000.000/0001-00 --saida ./saida/padaria-exemplo
 ```
 
 O app, ao abrir sem banco existente, deve mostrar uma mensagem clara (sem tela de criação de empresa).
@@ -30,11 +29,14 @@ O app, ao abrir sem banco existente, deve mostrar uma mensagem clara (sem tela d
 ## 3. Requisitos funcionais (dentro do app)
 
 ### Acesso
-- Login com usuário e senha (usuários do banco local).
-- O administrador pode cadastrar outros usuários da própria empresa (opcional na primeira versão; começar só com o admin inicial).
+- Sem login: o app é nativo e roda só no PC da empresa, então abre direto na tela principal.
+
+### Filiais (fixas, sem cadastro)
+- A empresa tem sempre as mesmas cinco filiais: **Matriz, Matozinhos, FC, Interiores e Depósito**. Não existe tela nem cadastro de filial.
+- No código são o enum `Filial` (Matriz=1, Matozinhos=2, FC=3, Interiores=4, Deposito=5) com nomes de exibição em `Filiais.Todas` (`Escalas.Domain`). O número é o que fica gravado no banco: nunca renumerar nem reaproveitar.
+- Bancos antigos (com tabela `Filiais`) são convertidos pela migration `FiliaisFixas`, com backup antes, ligando cada filial antiga à fixa de mesmo nome (ignorando maiúsculas, acentos e espaços nas pontas). A tabela antiga fica guardada como `FiliaisAntigas` (nome, cidade, UF e a filial fixa correspondente). Se uma filial antiga com dados não corresponder a nenhuma fixa, ou duas corresponderem à mesma, o app avisa quais são e não altera o banco; o `empacotar` também recusa gerar o pacote nesse caso.
 
 ### Cadastros (livres para a empresa, na interface)
-- **Filiais**: cada uma com cidade e estado (necessário para feriados locais).
 - **Setores**: cadastrados por filial.
 - **Funcionários**: vinculados a uma filial e a um setor.
 - **Mínimo de funcionários por setor**: definido por setor (e, se fizer sentido, por dia da semana).
@@ -43,8 +45,8 @@ O app, ao abrir sem banco existente, deve mostrar uma mensagem clara (sem tela d
 - Visão **semanal** (segunda a domingo), navegação entre semanas.
 - Cada dia mostra o status: feriado (com nome), dia fechado ou normal.
 - Marcar um dia como **fechado** (a filial não funciona naquele dia).
-- Associar funcionários aos dias em que vão trabalhar.
-- **Mover funcionários entre dias** com arrastar e soltar.
+- A escala é montada no **modelo semanal** (arrastar e soltar entre dias da semana).
+- O calendário é **somente leitura** para pessoas: mostra quem está escalado e quem está de folga em cada dia, sem incluir, remover ou mover alguém pontualmente.
 - **Alerta visual** quando um setor fica abaixo do mínimo em algum dia.
 - Feriados vêm de API e são informados de forma discreta (indicador sutil, não um bloco chamativo).
 
@@ -62,9 +64,8 @@ O app, ao abrir sem banco existente, deve mostrar uma mensagem clara (sem tela d
 | MVVM | CommunityToolkit.Mvvm |
 | Dados | Entity Framework Core + SQLite (um arquivo por empresa) |
 | Acesso a dados | Atrás de interfaces (repositórios/serviços), para manter a porta aberta a um backend central no futuro |
-| Senhas | Hash com Argon2 ou BCrypt, nunca texto puro |
 | Feriados nacionais | BrasilAPI: `GET https://brasilapi.com.br/api/feriados/v1/{ano}` |
-| Feriados estaduais/municipais | Tabela própria, vinculada à filial (a API não cobre) |
+| Feriados estaduais/municipais | Tabela própria, vinculada à filial fixa (a API não cobre); valem só para a filial a que foram vinculados |
 | Cache de feriados | Baixar por ano e guardar no banco local; funcionar offline depois |
 | IDE do desenvolvedor | JetBrains Rider (com plugin AvaloniaRider) |
 
@@ -75,7 +76,7 @@ Escalas.sln
 ├── src/
 │   ├── Escalas.Domain/          # Entidades e regras (sem dependência de UI nem banco)
 │   ├── Escalas.Application/     # Casos de uso, serviços, interfaces de repositório
-│   ├── Escalas.Infrastructure/  # EF Core, repositórios, cliente de feriados, hash de senha, backup
+│   ├── Escalas.Infrastructure/  # EF Core, repositórios, cliente de feriados, backup
 │   ├── Escalas.Desktop/         # Avalonia (Views, ViewModels, estilos, recursos)
 │   └── Escalas.Admin/           # Gerador de banco (CLI) para criar cada empresa
 └── tests/
@@ -84,13 +85,14 @@ Escalas.sln
 
 ### Modelo de dados (rascunho, sem multiempresa)
 - Empresa (Id, Nome, Documento) — **sempre uma única linha**
-- Usuario (Id, Login, SenhaHash, Papel)
-- Filial (Id, Nome, Cidade, UF)
-- Setor (Id, FilialId, Nome, MinimoFuncionarios)
-- Funcionario (Id, FilialId, SetorId, Nome, Ativo)
-- DiaFilial (Id, FilialId, Data, Fechado)
-- Escala (Id, FuncionarioId, Data) — um registro por funcionário escalado em um dia
-- Feriado (Id, Data, Nome, Abrangencia: Nacional/Estadual/Municipal, UF, Cidade, FilialId opcional)
+- Filial: **não é tabela**; é o enum fixo gravado como número na coluna `Filial` das tabelas abaixo
+- Setor (Id, Filial, Nome, MinimoFuncionarios)
+- Funcionario (Id, Filial, SetorId, Nome, Ativo, Foto)
+- DiaFilial (Id, Filial, Data, Fechado)
+- Escala (Id, FuncionarioId, Data, Removido) — exceção pontual ao modelo semanal
+- EscalaPadrao (Id, FuncionarioId, DiaSemana) — modelo semanal
+- Feriado (Id, Data, Nome, Abrangencia: Nacional/Estadual/Municipal, UF, Cidade, Filial opcional)
+- FiliaisAntigas (fora do modelo do EF) — cópia da antiga tabela de filiais, guardada pela migration `FiliaisFixas`
 
 Garantir por regra de aplicação (e, se possível, por constraint) que a tabela `Empresa` tenha no máximo uma linha.
 
@@ -115,7 +117,7 @@ Objetivo: profissional, minimalista, **sem aparência genérica ou de template**
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
     -p:EnableCompressionInSingleFile=true
   ```
-- Entrega ao cliente: o executável + o `.db` gerado pelo `Escalas.Admin` para aquela empresa.
+- Entrega ao cliente: `./empacotar.sh` gera `saida/Escalas-pacote.zip` com o executável, o banco atual (`escalas.db`) e a chave (`escalas.chave`). No PC da empresa basta descompactar e abrir o `.exe`: no primeiro uso o app copia o banco para a pasta de dados, guarda a chave protegida pelo Windows (DPAPI) e apaga o `escalas.chave` da pasta do pacote. Se já houver banco na pasta de dados, o pacote é ignorado (nunca sobrescreve).
 - Dados e configurações ficam em `%AppData%/Escalas` (ou equivalente em cada sistema), nunca dentro do executável.
 - Manter o código livre de dependências específicas de Windows, para publicar depois em Linux (`linux-x64`) e macOS (`osx-arm64`, `osx-x64`).
 - Futuro: instalador e atualização automática com Velopack; assinatura de código para evitar alerta do SmartScreen.
@@ -132,8 +134,8 @@ Objetivo: profissional, minimalista, **sem aparência genérica ou de template**
 ## 9. Roadmap por fases
 
 1. **Fundação**: solução, entidades, EF Core, migrations, tokens de estilo e janela principal.
-2. **Gerador e acesso**: `Escalas.Admin` (cria `.db`, empresa e admin) e tela de login com hash de senha.
-3. **Cadastros**: filiais, setores (com mínimo) e funcionários, com listas e formulários.
+2. **Gerador e acesso**: `Escalas.Admin` (cria `.db` e empresa).
+3. **Cadastros**: setores (com mínimo) e funcionários, com listas e formulários (filiais são fixas).
 4. **Feriados**: cliente BrasilAPI, cache local e cadastro de feriados locais por filial.
 5. **Calendário semanal**: visão da semana, status dos dias, fechar dia, escalar funcionários.
 6. **Arrastar e soltar** entre dias e alerta de mínimo por setor.

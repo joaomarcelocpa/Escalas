@@ -16,7 +16,6 @@ public sealed class CadastrosTests : IDisposable
 
     private readonly SqliteConnection _conn = new("Data Source=:memory:");
     private readonly Factory _factory;
-    private readonly FilialService _filiais;
     private readonly SetorService _setores;
     private readonly FuncionarioService _funcs;
 
@@ -26,58 +25,70 @@ public sealed class CadastrosTests : IDisposable
         var options = new DbContextOptionsBuilder<EscalasDbContext>().UseSqlite(_conn).Options;
         _factory = new Factory(options);
         using (var db = _factory.CreateDbContext()) db.Database.EnsureCreated();
-        _filiais = new(_factory);
         _setores = new(_factory);
         _funcs = new(_factory);
     }
 
     public void Dispose() => _conn.Dispose();
 
-    private Task<Filial> NovaFilial(string nome = "Centro") =>
-        _filiais.SalvarAsync(new Filial { Nome = nome, Cidade = "Recife", UF = "pe" });
-
     [Fact]
-    public async Task Filial_normaliza_uf_e_valida_campos()
+    public void Filiais_sao_fixas_na_ordem_combinada()
     {
-        var f = await NovaFilial();
-        Assert.Equal("PE", f.UF);
-        await Assert.ThrowsAsync<CadastroException>(() => _filiais.SalvarAsync(new Filial { Nome = "", Cidade = "X", UF = "PE" }));
-        await Assert.ThrowsAsync<CadastroException>(() => _filiais.SalvarAsync(new Filial { Nome = "A", Cidade = "X", UF = "PER" }));
+        Assert.Equal(["Matriz", "Matozinhos", "FC", "Interiores", "Depósito"], Filiais.Todas.Select(f => f.Nome));
+        Assert.Equal([1, 2, 3, 4, 5], Filiais.Todas.Select(f => (int)f.Id));
     }
 
+    [Theory]
+    [InlineData("Matriz", Filial.Matriz)]
+    [InlineData("  MATOZINHOS ", Filial.Matozinhos)]
+    [InlineData("fc", Filial.FC)]
+    [InlineData("Interiores", Filial.Interiores)]
+    [InlineData("Depósito", Filial.Deposito)]
+    [InlineData("DEPOSITO", Filial.Deposito)]
+    [InlineData("depÓsito", Filial.Deposito)]
+    public void Identificar_ignora_maiusculas_e_acentos(string nome, Filial esperada) =>
+        Assert.Equal(esperada, Filiais.Identificar(nome));
+
+    [Theory]
+    [InlineData("Centro")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void Identificar_devolve_nulo_quando_nao_corresponde(string? nome) => Assert.Null(Filiais.Identificar(nome));
+
     [Fact]
-    public async Task Filial_com_setor_nao_pode_ser_excluida()
+    public async Task Setor_e_funcionario_rejeitam_filial_inexistente()
     {
-        var f = await NovaFilial();
-        await _setores.SalvarAsync(new Setor { FilialId = f.Id, Nome = "Caixa", MinimoFuncionarios = 2 });
-        await Assert.ThrowsAsync<CadastroException>(() => _filiais.ExcluirAsync(f.Id));
+        await Assert.ThrowsAsync<CadastroException>(() => _setores.SalvarAsync(new Setor { Filial = (Filial)99, Nome = "Caixa" }));
+        var s = await _setores.SalvarAsync(new Setor { Filial = Filial.Matriz, Nome = "Caixa" });
+        await Assert.ThrowsAsync<CadastroException>(() =>
+            _funcs.SalvarAsync(new Funcionario { Nome = "Ana", Filial = (Filial)99, SetorId = s.Id }));
     }
 
     [Fact]
     public async Task Setor_rejeita_minimo_negativo_e_nome_duplicado()
     {
-        var f = await NovaFilial();
-        await Assert.ThrowsAsync<CadastroException>(() => _setores.SalvarAsync(new Setor { FilialId = f.Id, Nome = "A", MinimoFuncionarios = -1 }));
-        await _setores.SalvarAsync(new Setor { FilialId = f.Id, Nome = "Caixa" });
-        await Assert.ThrowsAsync<CadastroException>(() => _setores.SalvarAsync(new Setor { FilialId = f.Id, Nome = "Caixa" }));
+        var f = Filial.Matriz;
+        await Assert.ThrowsAsync<CadastroException>(() => _setores.SalvarAsync(new Setor { Filial = f, Nome = "A", MinimoFuncionarios = -1 }));
+        await _setores.SalvarAsync(new Setor { Filial = f, Nome = "Caixa" });
+        await Assert.ThrowsAsync<CadastroException>(() => _setores.SalvarAsync(new Setor { Filial = f, Nome = "Caixa" }));
     }
 
     [Fact]
     public async Task Funcionario_exige_setor_da_mesma_filial()
     {
-        var a = await NovaFilial("A");
-        var b = await NovaFilial("B");
-        var setorB = await _setores.SalvarAsync(new Setor { FilialId = b.Id, Nome = "Estoque" });
+        var a = Filial.Matriz;
+        var b = Filial.Deposito;
+        var setorB = await _setores.SalvarAsync(new Setor { Filial = b, Nome = "Estoque" });
         await Assert.ThrowsAsync<CadastroException>(() =>
-            _funcs.SalvarAsync(new Funcionario { Nome = "Ana", FilialId = a.Id, SetorId = setorB.Id }));
+            _funcs.SalvarAsync(new Funcionario { Nome = "Ana", Filial = a, SetorId = setorB.Id }));
     }
 
     [Fact]
     public async Task Funcionario_e_setor_com_dependencias_nao_sao_excluidos()
     {
-        var f = await NovaFilial();
-        var s = await _setores.SalvarAsync(new Setor { FilialId = f.Id, Nome = "Caixa" });
-        var func = await _funcs.SalvarAsync(new Funcionario { Nome = "Ana", FilialId = f.Id, SetorId = s.Id });
+        var f = Filial.Interiores;
+        var s = await _setores.SalvarAsync(new Setor { Filial = f, Nome = "Caixa" });
+        var func = await _funcs.SalvarAsync(new Funcionario { Nome = "Ana", Filial = f, SetorId = s.Id });
 
         await Assert.ThrowsAsync<CadastroException>(() => _setores.ExcluirAsync(s.Id));
 
@@ -92,21 +103,20 @@ public sealed class CadastrosTests : IDisposable
     [Fact]
     public async Task Fluxo_completo_cria_lista_edita_e_exclui()
     {
-        var f = await NovaFilial();
-        var s = await _setores.SalvarAsync(new Setor { FilialId = f.Id, Nome = "Caixa", MinimoFuncionarios = 1 });
-        var func = await _funcs.SalvarAsync(new Funcionario { Nome = " Ana ", FilialId = f.Id, SetorId = s.Id });
+        var f = Filial.Interiores;
+        var s = await _setores.SalvarAsync(new Setor { Filial = f, Nome = "Caixa", MinimoFuncionarios = 1 });
+        var func = await _funcs.SalvarAsync(new Funcionario { Nome = " Ana ", Filial = f, SetorId = s.Id });
         Assert.Equal("Ana", func.Nome);
 
         func.Ativo = false;
         await _funcs.SalvarAsync(func);
-        var lista = await _funcs.ListarAsync(f.Id);
+        var lista = await _funcs.ListarAsync(f);
         Assert.Single(lista);
         Assert.False(lista[0].Ativo);
         Assert.Equal("Caixa", lista[0].Setor!.Nome);
 
         await _funcs.ExcluirAsync(func.Id);
         await _setores.ExcluirAsync(s.Id);
-        await _filiais.ExcluirAsync(f.Id);
-        Assert.Empty(await _filiais.ListarAsync());
+        Assert.Empty(await _setores.ListarAsync(f));
     }
 }

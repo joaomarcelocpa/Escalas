@@ -25,15 +25,6 @@ public sealed class BancoMemoria : IDbContextFactory<EscalasDbContext>, IDisposa
     public EscalasDbContext CreateDbContext() =>
         new(new DbContextOptionsBuilder<EscalasDbContext>().UseSqlite(_conexao).Options);
 
-    public Filial AdicionarFilial(string nome, string cidade, string uf)
-    {
-        using var db = CreateDbContext();
-        var f = new Filial { Nome = nome, Cidade = cidade, UF = uf };
-        db.Filiais.Add(f);
-        db.SaveChanges();
-        return f;
-    }
-
     public void Dispose() => _conexao.Dispose();
 }
 
