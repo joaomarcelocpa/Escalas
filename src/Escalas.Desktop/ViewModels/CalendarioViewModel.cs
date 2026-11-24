@@ -9,8 +9,8 @@ using Escalas.Domain.Entidades;
 
 namespace Escalas.Desktop.ViewModels;
 
-/// <summary>Funcionário exibido em um dia (somente leitura).</summary>
-public record FuncionarioItem(int Id, string Nome, string? Detalhe, byte[]? Foto = null);
+/// <summary>Funcionário exibido em um dia (somente leitura). <see cref="Cobertura"/>: veio de outra filial cobrir folga.</summary>
+public record FuncionarioItem(int Id, string Nome, string? Detalhe, byte[]? Foto = null, bool Cobertura = false);
 
 /// <summary>Opção do filtro de setor; <see cref="Id"/> nulo significa todos os setores.</summary>
 public record SetorFiltro(int? Id, string Nome);
@@ -19,7 +19,7 @@ public class DiaViewModel
 {
     private static readonly string[] DiasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-    public DiaViewModel(DiaDto dto, int? setorId = null)
+    public DiaViewModel(DiaDto dto, ExpedienteDto? expediente = null)
     {
         Data = dto.Data;
         DiaSemana = DiasSemana[(int)dto.Data.DayOfWeek];
@@ -27,12 +27,21 @@ public class DiaViewModel
         NomeFeriado = dto.NomeFeriado;
         Fechado = dto.Fechado;
         TextoFechar = dto.Fechado ? "Reabrir" : "Fechar";
-        Escalados = dto.Setores.Where(s => setorId is null || s.SetorId == setorId)
+        // Quem veio cobrir folga entra na lista do dia, marcado como cobertura.
+        Escalados = dto.Setores
             .SelectMany(s => s.Escalados.Select(f => new FuncionarioItem(f.Id, f.Nome, s.Nome, f.Foto)))
+            .Concat(dto.Cobrindo.Select(c => new FuncionarioItem(c.Id, c.Nome, $"Cobertura · {Filiais.Nome(c.Filial)}", c.Foto, true)))
             .OrderBy(f => f.Nome).ToList();
+        // Quem saiu daqui para cobrir outra filial não está de folga: aparece à parte.
+        Fora = dto.Fora.Select(c => new FuncionarioItem(c.Id, c.Nome, $"Cobre {Filiais.Nome(c.Filial)}", c.Foto)).ToList();
+        TextoFora = $"Em outra filial ({Fora.Count})";
         Hoje = dto.Data == DateOnly.FromDateTime(DateTime.Today);
-        Disponiveis = dto.Disponiveis.Where(f => setorId is null || f.SetorId == setorId).Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, f.Foto)).ToList();
+        Disponiveis = dto.Disponiveis.Select(f => new FuncionarioItem(f.Id, f.Nome, f.SetorNome, f.Foto)).ToList();
         TextoDisponiveis = $"Folga ({Disponiveis.Count})";
+        SemExpediente = expediente is null;
+        TextoExpediente = expediente is null
+            ? "Sem expediente"
+            : RegraHoras.FormatarIntervalo(expediente.Inicio, expediente.Fim);
     }
 
     public DateOnly Data { get; }
@@ -46,6 +55,14 @@ public class DiaViewModel
     public bool Hoje { get; }
     public IReadOnlyList<FuncionarioItem> Disponiveis { get; }
     public string TextoDisponiveis { get; }
+    /// <summary>Funcionários desta filial cobrindo folga em outra filial neste dia.</summary>
+    public IReadOnlyList<FuncionarioItem> Fora { get; }
+    public string TextoFora { get; }
+    public bool TemFora => Fora.Count > 0;
+    /// <summary>Expediente do dia da semana ("08:00–17:00") ou "Sem expediente". Só exibição: a edição fica na escala semanal.</summary>
+    public string TextoExpediente { get; }
+    public bool SemExpediente { get; }
+    public bool MostrarExpediente => !Fechado;
 }
 
 public partial class CalendarioViewModel : ViewModelBase
@@ -57,19 +74,13 @@ public partial class CalendarioViewModel : ViewModelBase
 
     private readonly IEscalaService? _servico;
     private readonly IDialogoConfirmacao? _dialogo;
+    private readonly IExpedienteService? _expedientes;
+    private readonly IDialogosHorario? _dialogosHorario;
     private DateOnly _inicioSemana = RegraEscala.InicioDaSemana(DateOnly.FromDateTime(DateTime.Today));
 
     /// <summary>Filiais fixas.</summary>
     public IReadOnlyList<FilialOpcao> Filiais { get; } = global::Escalas.Domain.Entidades.Filiais.Todas;
     public ObservableCollection<DiaViewModel> Dias { get; } = [];
-    public ObservableCollection<SetorFiltro> Setores { get; } = [];
-
-    private static readonly SetorFiltro TodosSetores = new(null, "Todos os setores");
-    private bool _atualizandoSetores;
-
-    [ObservableProperty]
-    public partial SetorFiltro? SetorSelecionado { get; set; }
-
     [ObservableProperty]
     public partial FilialOpcao? FilialSelecionada { get; set; }
 
@@ -82,38 +93,29 @@ public partial class CalendarioViewModel : ViewModelBase
     /// <summary>Construtor para o previewer.</summary>
     public CalendarioViewModel() => AtualizarTitulo();
 
-    public CalendarioViewModel(IEscalaService servico, IDialogoConfirmacao dialogo)
+    public CalendarioViewModel(IEscalaService servico, IDialogoConfirmacao dialogo,
+        IExpedienteService expedientes, IDialogosHorario dialogosHorario)
     {
         _servico = servico;
         _dialogo = dialogo;
+        _expedientes = expedientes;
+        _dialogosHorario = dialogosHorario;
         AtualizarTitulo();
         FilialSelecionada = Filiais[0];
     }
 
-    partial void OnFilialSelecionadaChanged(FilialOpcao? value) => _ = RecarregarAsync(refazerSetores: true);
+    partial void OnFilialSelecionadaChanged(FilialOpcao? value) => _ = RecarregarAsync();
 
-    partial void OnSetorSelecionadoChanged(SetorFiltro? value)
-    {
-        if (!_atualizandoSetores) _ = RecarregarAsync();
-    }
-
-    private async Task RecarregarAsync(bool refazerSetores = false)
+    private async Task RecarregarAsync()
     {
         if (_servico is null || FilialSelecionada is null) { Dias.Clear(); return; }
 
         var semana = await _servico.ObterSemanaAsync(FilialSelecionada.Id, _inicioSemana);
-        if (refazerSetores)
-        {
-            _atualizandoSetores = true;
-            Setores.Clear();
-            Setores.Add(TodosSetores);
-            foreach (var st in semana.Dias.FirstOrDefault()?.Setores ?? [])
-                Setores.Add(new SetorFiltro(st.SetorId, st.Nome));
-            SetorSelecionado = TodosSetores;
-            _atualizandoSetores = false;
-        }
+        var expedientes = _expedientes is null
+            ? new Dictionary<DayOfWeek, ExpedienteDto>()
+            : (await _expedientes.ObterAsync()).ToDictionary(e => e.Dia);
         // Troca tudo de uma vez, só depois da consulta: evita o piscar de tela vazia ao mudar de semana.
-        var novos = semana.Dias.Select(d => new DiaViewModel(d, SetorSelecionado?.Id)).ToList();
+        var novos = semana.Dias.Select(d => new DiaViewModel(d, expedientes.GetValueOrDefault(d.Data.DayOfWeek))).ToList();
         Dias.Clear();
         foreach (var d in novos) Dias.Add(d);
     }
@@ -152,6 +154,18 @@ public partial class CalendarioViewModel : ViewModelBase
         if (!await Confirmar(fechar ? "Fechar dia" : "Reabrir dia", mensagem, fechar ? "Fechar" : "Reabrir")) return;
         await Aplicar(_servico.DefinirDiaFechadoAsync(FilialSelecionada.Id, dia.Data, fechar));
     }
+
+    /// <summary>Popup com os dias e as horas do funcionário na semana visível.</summary>
+    [RelayCommand]
+    private Task VerHorasAsync(FuncionarioItem funcionario) =>
+        FilialSelecionada is null
+            ? Task.CompletedTask
+            : _dialogosHorario?.MostrarHorasFuncionarioAsync(funcionario.Id, _inicioSemana, FilialSelecionada.Id) ?? Task.CompletedTask;
+
+    /// <summary>Resumo da semana visível: todos os funcionários, por filial, com dias, horários e horas.</summary>
+    [RelayCommand]
+    private Task ResumoSemanalAsync() =>
+        _dialogosHorario?.MostrarResumoSemanalAsync(_inicioSemana) ?? Task.CompletedTask;
 
     private static string Texto(DateOnly data) => data.ToString("ddd dd/MM", PtBr);
 

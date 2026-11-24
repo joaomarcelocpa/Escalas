@@ -47,6 +47,16 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+                <TextBlock Classes="rotulo" Text="Filial extra (opcional)" />
+                <ComboBox ItemsSource="{Binding FiliaisExtra}" SelectedItem="{Binding FilialExtraSelecionada}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FilialExtraOpcao">
+                            <TextBlock Text="{Binding Nome}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Classes="secundario" TextWrapping="Wrap" Margin="0,4,0,0"
+                           Text="Pode cobrir a folga dos funcionários fixos dessa filial. A cobertura é escolhida na Escala semanal." />
                 <CheckBox Margin="0,12,0,0" Content="Ativo" IsChecked="{Binding Ativo}" />
                 <StackPanel Classes="acoes">
                     <Button Classes="destaque" Content="Salvar" Command="{Binding SalvarCommand}" />

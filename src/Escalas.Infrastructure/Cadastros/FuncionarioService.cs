@@ -20,6 +20,11 @@ public class FuncionarioService(IDbContextFactory<EscalasDbContext> factory) : I
         var nome = (funcionario.Nome ?? "").Trim();
         if (nome.Length == 0) throw new CadastroException("Informe o nome do funcionário.");
         if (!Filiais.Existe(funcionario.Filial)) throw new CadastroException("Selecione uma filial válida.");
+        if (funcionario.FilialExtra is { } extra)
+        {
+            if (!Filiais.Existe(extra)) throw new CadastroException("Selecione uma filial extra válida.");
+            if (extra == funcionario.Filial) throw new CadastroException("A filial extra deve ser diferente da filial do funcionário.");
+        }
 
         await using var db = await factory.CreateDbContextAsync(ct);
         var setor = await db.Setores.AsNoTracking().FirstOrDefaultAsync(s => s.Id == funcionario.SetorId, ct)
@@ -37,13 +42,18 @@ public class FuncionarioService(IDbContextFactory<EscalasDbContext> factory) : I
         {
             alvo = await db.Funcionarios.FindAsync([funcionario.Id], ct) ?? throw new CadastroException("Funcionário não encontrado.");
         }
+        // Trocou a filial ou a filial extra: as coberturas antigas deixam de valer e ele volta para a própria filial nesses dias.
+        if (alvo.Id != 0 && (alvo.Filial != funcionario.Filial || alvo.FilialExtra != funcionario.FilialExtra))
+            await db.EscalasPadrao.Where(p => p.FuncionarioId == alvo.Id && p.FilialCobertura != null)
+                .ExecuteUpdateAsync(u => u.SetProperty(p => p.FilialCobertura, (Filial?)null), ct);
         alvo.Nome = nome;
         alvo.Filial = funcionario.Filial;
+        alvo.FilialExtra = funcionario.FilialExtra;
         alvo.SetorId = funcionario.SetorId;
         alvo.Ativo = funcionario.Ativo;
         alvo.Foto = funcionario.Foto;
         await db.SaveChangesAsync(ct);
-        return new Funcionario { Id = alvo.Id, Nome = alvo.Nome, Filial = alvo.Filial, SetorId = alvo.SetorId, Ativo = alvo.Ativo, Foto = alvo.Foto };
+        return new Funcionario { Id = alvo.Id, Nome = alvo.Nome, Filial = alvo.Filial, FilialExtra = alvo.FilialExtra, SetorId = alvo.SetorId, Ativo = alvo.Ativo, Foto = alvo.Foto };
     }
 
     public async Task ExcluirAsync(int id, CancellationToken ct = default)

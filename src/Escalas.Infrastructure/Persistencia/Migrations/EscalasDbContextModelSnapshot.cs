@@ -93,6 +93,9 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.Property<int>("DiaSemana")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("FilialCobertura")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("FuncionarioId")
                         .HasColumnType("INTEGER");
 
@@ -102,6 +105,29 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                         .IsUnique();
 
                     b.ToTable("EscalasPadrao");
+                });
+
+            modelBuilder.Entity("Escalas.Domain.Entidades.Expediente", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DiaSemana")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<TimeOnly>("Fim")
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeOnly>("Inicio")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DiaSemana")
+                        .IsUnique();
+
+                    b.ToTable("ExpedientesSemana", (string)null);
                 });
 
             modelBuilder.Entity("Escalas.Domain.Entidades.Feriado", b =>
@@ -148,6 +174,9 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Filial")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("FilialExtra")
                         .HasColumnType("INTEGER");
 
                     b.Property<byte[]>("Foto")

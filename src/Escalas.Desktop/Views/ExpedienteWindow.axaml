@@ -1,0 +1,53 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Escalas.Desktop.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="Escalas.Desktop.Views.ExpedienteWindow"
+        x:DataType="vm:ExpedienteSemanaViewModel"
+        Title="Expediente"
+        Width="460" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+
+    <Design.DataContext>
+        <vm:ExpedienteSemanaViewModel />
+    </Design.DataContext>
+
+    <StackPanel Margin="{DynamicResource PaddingEspaco6}" Spacing="{DynamicResource Espaco3}">
+        <TextBlock Classes="titulo" Text="Expediente" />
+        <TextBlock Classes="secundario" TextWrapping="Wrap"
+                   Text="Horário geral de cada dia da semana, igual para todas as filiais e todas as semanas. As horas de quem está escalado são calculadas por ele, descontando 1h30 de almoço nos dias com 8h ou mais. Deixe vazio para dia sem expediente." />
+
+        <ItemsControl ItemsSource="{Binding Dias}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ExpedienteDiaItem">
+                    <Grid ColumnDefinitions="88,72,24,72,*,Auto" Margin="0,0,0,6">
+                        <TextBlock Grid.Column="0" Text="{Binding Titulo}" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Classes="hora" Text="{Binding Inicio}" PlaceholderText="08:00" />
+                        <TextBlock Grid.Column="2" Classes="secundario" Text="às" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="3" Classes="hora" Text="{Binding Fim}" PlaceholderText="18:00" />
+                        <TextBlock Grid.Column="4" Classes="secundario" Text="{Binding Duracao}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                        <Button Grid.Column="5" Classes="link" Content="×" ToolTip.Tip="Sem expediente neste dia"
+                                VerticalAlignment="Center"
+                                Command="{Binding $parent[Window].((vm:ExpedienteSemanaViewModel)DataContext).LimparDiaCommand}"
+                                CommandParameter="{Binding}" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Espaco4}">
+            <Button Classes="link" Content="Repetir o primeiro horário nos outros dias" Command="{Binding RepetirPrimeiroCommand}" />
+        </StackPanel>
+
+        <Border Classes="mensagem" Margin="0" IsVisible="{Binding Erro, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock Text="{Binding Erro}" TextWrapping="Wrap" />
+        </Border>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource Espaco2}">
+            <Button Classes="secundario" Content="Cancelar" IsCancel="True" Command="{Binding CancelarCommand}" />
+            <Button Classes="destaque" Content="Salvar" IsDefault="True" Command="{Binding SalvarCommand}" />
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -38,7 +38,7 @@ O app, ao abrir sem banco existente, deve mostrar uma mensagem clara (sem tela d
 
 ### Cadastros (livres para a empresa, na interface)
 - **Setores**: cadastrados por filial.
-- **Funcionários**: vinculados a uma filial e a um setor.
+- **Funcionários**: vinculados a uma filial e a um setor. Opcionalmente têm uma **filial extra**, onde podem cobrir a folga dos funcionários fixos de lá.
 - **Mínimo de funcionários por setor**: definido por setor (e, se fizer sentido, por dia da semana).
 
 ### Calendário e escala
@@ -49,6 +49,23 @@ O app, ao abrir sem banco existente, deve mostrar uma mensagem clara (sem tela d
 - O calendário é **somente leitura** para pessoas: mostra quem está escalado e quem está de folga em cada dia, sem incluir, remover ou mover alguém pontualmente.
 - **Alerta visual** quando um setor fica abaixo do mínimo em algum dia.
 - Feriados vêm de API e são informados de forma discreta (indicador sutil, não um bloco chamativo).
+
+### Cobertura de folga (filial extra)
+- No cadastro do funcionário, "Filial extra (opcional)": qualquer filial diferente da dele. Quem só tem a filial como extra não aparece como folga nela.
+- A cobertura é definida na **Escala semanal** da filial coberta e repete em todas as semanas: nos dias em que algum fixo da filial está de folga, a caixa "Cobrir folga com…" lista os ativos que têm essa filial como extra e trabalham na filial deles nesse dia.
+- Cobrir troca o lugar do dia: o funcionário sai da filial dele naquele dia e vai para a filial coberta (fica gravado na própria linha do modelo semanal, então nunca fica em duas filiais no mesmo dia). Não dá para cobrir no dia de folga do próprio cobridor. O "×" desfaz a cobertura e ele volta para a filial dele.
+- Na filial dele, o dia de cobertura aparece em "Cobertura de folga" / "Em outra filial" (não é folga) e não pode ser alocado, movido ou removido por lá.
+- Calendário: o cobridor aparece entre os escalados da filial coberta, marcado "Cobertura · filial de origem", e conta no mínimo do setor de mesmo nome. Dia fechado na filial coberta não tem cobertura.
+- Horas: o dia de cobertura conta na semana do funcionário (popup mostra "Cobre X"). Resumo e planilha mostram o funcionário só na filial dele, com o dia de cobertura marcado com a filial coberta; a filial coberta não lista quem veio cobrir.
+- Trocar a filial ou a filial extra do funcionário desfaz as coberturas dele.
+
+### Gestão de horários
+- **Expediente por dia da semana**: definido na tela **Escala semanal** (botão "Expediente" ou clique no horário de um dia), de segunda a sábado. Repete em todas as semanas e vale para todas as filiais e para todos os escalados no dia; não atravessa a meia-noite. O calendário só exibe o horário.
+- **Almoço fixo**: 1h30 descontada de todos os funcionários nos dias com 8h ou mais de expediente (dias abaixo de 8h não descontam). O popup indica quando houve desconto; resumo e exportações mostram só as horas já descontadas.
+- **Horas** = fim − início do expediente (menos o almoço, quando houver), somadas nos dias em que o funcionário está escalado (mesma regra do calendário: modelo semanal, exceções, dia fechado e feriado). Dia escalado sem expediente aparece como "Sem expediente" e não soma.
+- **Popup do funcionário**: clicar em um funcionário no calendário mostra os dias escalados da semana visível, o horário e as horas de cada dia, o total até hoje e o total da semana.
+- **Exportar planilha** (Escala semanal): .xlsx simples com uma aba por filial: uma linha por funcionário (nome e setor) e uma coluna por dia, com o horário do expediente nos dias em que trabalha ("Escalado" se o dia não tem expediente) e "Descanso" na folga. A última coluna traz as horas da semana, já com o almoço descontado.
+- **Resumo semanal**: botão no canto do calendário; segunda a sábado (sem domingo); todos os funcionários ativos por filial, com o horário e as horas de cada dia e o total de cada funcionário (sem total por filial). Só visualização (sem exportação).
 
 ### Proteção e continuidade dos dados
 - **Backup**: botão "Exportar backup" (copia o `.db`) e backup automático ao fechar o app, mantendo as últimas N cópias.
@@ -87,10 +104,11 @@ Escalas.sln
 - Empresa (Id, Nome, Documento) — **sempre uma única linha**
 - Filial: **não é tabela**; é o enum fixo gravado como número na coluna `Filial` das tabelas abaixo
 - Setor (Id, Filial, Nome, MinimoFuncionarios)
-- Funcionario (Id, Filial, SetorId, Nome, Ativo, Foto)
+- Funcionario (Id, Filial, FilialExtra opcional, SetorId, Nome, Ativo, Foto)
 - DiaFilial (Id, Filial, Data, Fechado)
 - Escala (Id, FuncionarioId, Data, Removido) — exceção pontual ao modelo semanal
-- EscalaPadrao (Id, FuncionarioId, DiaSemana) — modelo semanal
+- EscalaPadrao (Id, FuncionarioId, DiaSemana, FilialCobertura opcional) — modelo semanal; FilialCobertura preenchida = nesse dia cobre a filial extra
+- Expediente (Id, DiaSemana único, Inicio, Fim) — tabela ExpedientesSemana; horário geral do dia da semana, igual para todas as filiais
 - Feriado (Id, Data, Nome, Abrangencia: Nacional/Estadual/Municipal, UF, Cidade, Filial opcional)
 - FiliaisAntigas (fora do modelo do EF) — cópia da antiga tabela de filiais, guardada pela migration `FiliaisFixas`
 

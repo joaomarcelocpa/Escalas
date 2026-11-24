@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Escalas.Desktop.ViewModels"
+             xmlns:ent="using:Escalas.Domain.Entidades"
+             x:Class="Escalas.Desktop.Views.FiliaisView"
+             x:DataType="vm:FiliaisViewModel">
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Filiais" Margin="0,0,0,16" />
+
+        <Grid ColumnDefinitions="*,24,280">
+            <ListBox Classes="cartoes" ItemsSource="{Binding Itens}" SelectedItem="{Binding Selecionada}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="ent:Filial">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="cartaoNome" Text="{Binding Nome}" />
+                            <TextBlock Classes="secundario">
+                                <Run Text="{Binding Cidade}" /><Run Text=" / " /><Run Text="{Binding UF}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <StackPanel Grid.Column="2" Classes="formulario">
+                <TextBlock Classes="rotulo" Text="Nome" Margin="0,0,0,4" />
+                <TextBox Text="{Binding Nome}" />
+                <TextBlock Classes="rotulo" Text="Cidade" />
+                <TextBox Text="{Binding Cidade}" />
+                <TextBlock Classes="rotulo" Text="UF" />
+                <TextBox Text="{Binding UF}" MaxLength="2" />
+                <StackPanel Classes="acoes">
+                    <Button Classes="destaque" Content="Salvar" Command="{Binding SalvarCommand}" />
+                    <Button Classes="secundario" Content="Excluir" Command="{Binding ExcluirCommand}" />
+                </StackPanel>
+                <Border Classes="mensagem" IsVisible="{Binding Erro, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding Erro}" TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</UserControl>

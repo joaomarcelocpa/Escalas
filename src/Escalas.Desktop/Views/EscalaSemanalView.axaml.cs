@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using Escalas.Desktop.ViewModels;
 
@@ -15,6 +16,23 @@ public partial class EscalaSemanalView : UserControl
         AddHandler(PointerPressedEvent, AoPressionar, RoutingStrategies.Tunnel);
         AddHandler(DragDrop.DragOverEvent, AoArrastarSobre);
         AddHandler(DragDrop.DropEvent, AoSoltar);
+    }
+
+    private async void ExportarPlanilha_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not EscalaSemanalViewModel vm || TopLevel.GetTopLevel(this) is not { } topo) return;
+        var arquivo = await topo.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Exportar escala semanal",
+            SuggestedFileName = vm.NomeArquivoPlanilha,
+            DefaultExtension = "xlsx",
+            FileTypeChoices = [new FilePickerFileType("Planilha do Excel") { Patterns = ["*.xlsx"] }],
+        });
+        if (arquivo is null) return;
+        var conteudo = await vm.GerarPlanilhaAsync();
+        if (conteudo is null) return;
+        await using var stream = await arquivo.OpenWriteAsync();
+        await stream.WriteAsync(conteudo);
     }
 
     /// <summary>Payload: "id|diaOrigem" (diaOrigem vazio = veio da lista de disponíveis).</summary>

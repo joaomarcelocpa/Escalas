@@ -14,7 +14,7 @@
     </Design.DataContext>
 
     <DockPanel>
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,4">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16">
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Espaco2}">
                 <TextBlock Classes="titulo" Text="Escala semanal" VerticalAlignment="Center" />
             </StackPanel>
@@ -30,18 +30,15 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-                <ComboBox ItemsSource="{Binding Setores}" SelectedItem="{Binding SetorSelecionado}"
-                          MinWidth="160" VerticalAlignment="Center">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:SetorFiltro">
-                            <TextBlock Text="{Binding Nome}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                <Border Width="8" />
+                <Button Classes="barra" Content="Expediente" VerticalAlignment="Center"
+                        ToolTip.Tip="Horário de início e fim de cada dia da semana (todas as filiais)"
+                        Command="{Binding EditarExpedienteCommand}" />
+                <Button Classes="barra" Content="Exportar planilha" VerticalAlignment="Center"
+                        ToolTip.Tip="Planilha .xlsx com a escala de todas as filiais (uma aba por filial)"
+                        Click="ExportarPlanilha_Click" />
             </StackPanel>
         </Grid>
-        <TextBlock DockPanel.Dock="Top" Classes="secundario" Margin="0,0,0,12"
-                   Text="Modelo que se repete em todas as semanas. Ajustes de um dia específico são feitos no Calendário." />
 
         <ItemsControl ItemsSource="{Binding Dias}">
             <ItemsControl.ItemsPanel>
@@ -53,10 +50,68 @@
                 <DataTemplate x:DataType="vm:DiaPadraoViewModel">
                     <Border Classes="dia" DragDrop.AllowDrop="True">
                         <DockPanel>
-                            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                                <TextBlock Classes="diaTitulo" Text="{Binding Titulo}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Grid.Column="1" Classes="setor" Text="{Binding Contagem}" VerticalAlignment="Center" />
-                            </Grid>
+                            <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="0,0,0,8">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Classes="diaTitulo" Text="{Binding Titulo}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Classes="setor" Text="{Binding Contagem}" VerticalAlignment="Center" />
+                                </Grid>
+                                <Button Classes="expediente" Classes.semExpediente="{Binding SemExpediente}"
+                                        ToolTip.Tip="Editar expediente"
+                                        Command="{Binding $parent[UserControl].((vm:EscalaSemanalViewModel)DataContext).EditarExpedienteCommand}">
+                                    <TextBlock Text="{Binding TextoExpediente}" TextTrimming="CharacterEllipsis" />
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Cobertura de folga: quem vem de outra filial (filial extra), quem pode vir e quem saiu daqui para cobrir -->
+                            <Border DockPanel.Dock="Top" Classes="coberturaDia" IsVisible="{Binding MostrarCobertura}">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="secundario" Text="Cobertura de folga" />
+                                    <ItemsControl ItemsSource="{Binding Cobrindo}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:CoberturaPadraoItem">
+                                                <Border Classes="func leitura cobertura">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                                        <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0" Foto="{Binding Foto}" Nome="{Binding Nome}" />
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
+                                                        </StackPanel>
+                                                        <Button Grid.Column="2" Classes="link" Content="×" VerticalAlignment="Center"
+                                                                ToolTip.Tip="Desfazer cobertura (volta para a filial dele neste dia)"
+                                                                Command="{Binding $parent[UserControl].((vm:EscalaSemanalViewModel)DataContext).RemoverCoberturaCommand}"
+                                                                CommandParameter="{Binding}" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <ComboBox HorizontalAlignment="Stretch" PlaceholderText="Cobrir folga com…"
+                                              IsVisible="{Binding TemCandidatos}"
+                                              ToolTip.Tip="Quem tem esta filial como extra e trabalha neste dia na filial dele. Ele sai de lá neste dia."
+                                              ItemsSource="{Binding Candidatos}" SelectedItem="{Binding CandidatoEscolhido}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:CoberturaPadraoItem">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Classes="secundario" Text="{Binding Detalhe}" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <ItemsControl ItemsSource="{Binding Fora}" IsVisible="{Binding TemFora}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:CoberturaPadraoItem">
+                                                <TextBlock Classes="secundario" TextTrimming="CharacterEllipsis"
+                                                           ToolTip.Tip="Neste dia trabalha na outra filial (desfaça a cobertura por lá)">
+                                                    <Run Text="{Binding Nome}" />
+                                                    <Run Text="·" />
+                                                    <Run Text="{Binding Detalhe}" />
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
 
                             <!-- Disponíveis: origem para alocar e destino para desalocar -->
                             <Border DockPanel.Dock="Bottom" Classes="disponiveis" Tag="disponiveis"

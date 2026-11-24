@@ -12,6 +12,7 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
     public DbSet<Escala> Escalas => Set<Escala>();
     public DbSet<EscalaPadrao> EscalasPadrao => Set<EscalaPadrao>();
     public DbSet<Feriado> Feriados => Set<Feriado>();
+    public DbSet<Expediente> Expedientes => Set<Expediente>();
 
     /// <summary>
     /// Filiais são fixas (enum <see cref="Filial"/>), gravadas como número na coluna "Filial".
@@ -61,6 +62,12 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
             e.HasIndex(x => x.Data);
             e.Property(x => x.Nome).IsRequired();
             e.HasIndex(x => x.Filial);
+        });
+
+        b.Entity<Expediente>(e =>
+        {
+            e.ToTable("ExpedientesSemana");
+            e.HasIndex(x => x.DiaSemana).IsUnique();
         });
     }
 }

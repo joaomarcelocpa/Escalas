@@ -11,6 +11,7 @@ public static class CalendarioUiModulo
     public static void Registrar(IServiceCollection services, List<ItemNavegacao> menu)
     {
         services.AddSingleton<IDialogoConfirmacao, DialogoConfirmacao>();
+        services.AddSingleton<IDialogosHorario, DialogosHorario>();
         services.AddTransient<CalendarioViewModel>();
         services.AddTransient<EscalaSemanalViewModel>();
         menu.Add(new ItemNavegacao("Calendário", typeof(CalendarioViewModel), Icones.Calendario));

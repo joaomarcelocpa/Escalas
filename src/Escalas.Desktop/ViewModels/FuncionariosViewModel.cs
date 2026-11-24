@@ -7,6 +7,9 @@ using Escalas.Domain.Entidades;
 
 namespace Escalas.Desktop.ViewModels;
 
+/// <summary>Opção da filial extra; <see cref="Id"/> nulo = nenhuma.</summary>
+public record FilialExtraOpcao(Filial? Id, string Nome);
+
 public partial class FuncionariosViewModel : CadastroViewModelBase
 {
     private readonly ISetorService _setores;
@@ -16,11 +19,15 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
     /// <summary>Filiais fixas.</summary>
     public IReadOnlyList<FilialOpcao> Filiais { get; } = global::Escalas.Domain.Entidades.Filiais.Todas;
     public ObservableCollection<Setor> Setores { get; } = [];
+    /// <summary>"Nenhuma" + as filiais diferentes da selecionada.</summary>
+    public ObservableCollection<FilialExtraOpcao> FiliaisExtra { get; } = [];
     public ObservableCollection<Funcionario> Itens { get; } = [];
 
     [ObservableProperty] public partial FilialOpcao? FilialSelecionada { get; set; }
     [ObservableProperty] public partial Funcionario? Selecionado { get; set; }
     [ObservableProperty] public partial Setor? SetorSelecionado { get; set; }
+    /// <summary>Filial em que o funcionário pode cobrir a folga dos fixos (opcional).</summary>
+    [ObservableProperty] public partial FilialExtraOpcao? FilialExtraSelecionada { get; set; }
     [ObservableProperty] public partial string Nome { get; set; } = "";
     [ObservableProperty] public partial bool Ativo { get; set; } = true;
     [ObservableProperty] public partial byte[]? Foto { get; set; }
@@ -52,7 +59,18 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
         FilialSelecionada = Filiais[0];
     }
 
-    partial void OnFilialSelecionadaChanged(FilialOpcao? value) => _ = ExecutarAsync(async () =>
+    partial void OnFilialSelecionadaChanged(FilialOpcao? value)
+    {
+        FiliaisExtra.Clear();
+        FiliaisExtra.Add(Nenhuma);
+        foreach (var f in Filiais.Where(f => f.Id != value?.Id)) FiliaisExtra.Add(new FilialExtraOpcao(f.Id, f.Nome));
+        FilialExtraSelecionada = Nenhuma;
+        _ = RecarregarFilialAsync(value);
+    }
+
+    private static readonly FilialExtraOpcao Nenhuma = new(null, "Nenhuma");
+
+    private Task RecarregarFilialAsync(FilialOpcao? value) => ExecutarAsync(async () =>
     {
         Setores.Clear();
         if (value is not null)
@@ -67,6 +85,7 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
         Ativo = value?.Ativo ?? true;
         Foto = value?.Foto;
         SetorSelecionado = value is null ? null : Setores.FirstOrDefault(s => s.Id == value.SetorId);
+        FilialExtraSelecionada = FiliaisExtra.FirstOrDefault(f => f.Id == value?.FilialExtra) ?? Nenhuma;
     }
 
     private async Task CarregarAsync(int? selecionarId)
@@ -95,6 +114,7 @@ public partial class FuncionariosViewModel : CadastroViewModelBase
             Nome = Nome,
             Filial = FilialSelecionada.Id,
             SetorId = SetorSelecionado?.Id ?? 0,
+            FilialExtra = FilialExtraSelecionada?.Id,
             Ativo = Ativo,
             Foto = Foto,
         });

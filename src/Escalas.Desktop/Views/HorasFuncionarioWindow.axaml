@@ -1,0 +1,76 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Escalas.Desktop.ViewModels"
+        xmlns:ctl="using:Escalas.Desktop.Controls"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="Escalas.Desktop.Views.HorasFuncionarioWindow"
+        x:DataType="vm:HorasFuncionarioViewModel"
+        Title="{Binding Nome}"
+        Width="440" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+
+    <Design.DataContext>
+        <vm:HorasFuncionarioViewModel />
+    </Design.DataContext>
+
+    <StackPanel Margin="{DynamicResource PaddingEspaco6}" Spacing="{DynamicResource Espaco3}">
+        <Grid ColumnDefinitions="Auto,*">
+            <ctl:AvatarFuncionario Width="56" Height="56" Margin="0,0,12,0" VerticalAlignment="Center"
+                                   Foto="{Binding Foto}" Nome="{Binding Nome}" />
+            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock Classes="titulo" Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Classes="secundario" Text="{Binding Detalhe}" />
+                <TextBlock Classes="secundario" Text="{Binding Semana}" />
+            </StackPanel>
+        </Grid>
+
+        <Border Classes="lista" Padding="{DynamicResource PaddingEspaco3}" BoxShadow="none">
+            <StackPanel Spacing="{DynamicResource Espaco2}">
+                <TextBlock Classes="secundario" Text="Sem dias escalados nesta semana." IsVisible="{Binding SemDias}" />
+                <ItemsControl ItemsSource="{Binding Dias}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HorasDiaItem">
+                            <Grid ColumnDefinitions="*,Auto,64" Margin="0,4" Classes.futuro="{Binding Futuro}" Classes="horasDia">
+                                <StackPanel VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Espaco2}">
+                                        <TextBlock Text="{Binding Dia}" FontWeight="SemiBold" />
+                                        <TextBlock Classes="secundario" Text="{Binding Data}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Classes="secundario" Foreground="{DynamicResource DestaqueBrush}"
+                                               Text="{Binding Local}" IsVisible="{Binding TemLocal}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Classes="secundario" Classes.semExpediente="{Binding SemExpediente}"
+                                               Text="{Binding Intervalo}" HorizontalAlignment="Right" />
+                                    <TextBlock Classes="secundario" Text="{Binding Almoco}" HorizontalAlignment="Right"
+                                               IsVisible="{Binding TemAlmoco}" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{Binding Horas}" FontWeight="SemiBold"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="*,*">
+            <StackPanel Spacing="2">
+                <TextBlock Classes="secundario" Text="Até hoje" />
+                <TextBlock Classes="totalHoras" Text="{Binding TotalAteHoje}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="2" HorizontalAlignment="Right">
+                <TextBlock Classes="secundario" Text="{Binding TextoDias, StringFormat='Semana · {0}'}" HorizontalAlignment="Right" />
+                <TextBlock Classes="totalHoras" Text="{Binding TotalSemana}" HorizontalAlignment="Right" />
+            </StackPanel>
+        </Grid>
+
+        <Border Classes="mensagem" Margin="0" IsVisible="{Binding TemAviso}">
+            <TextBlock Text="{Binding Aviso}" TextWrapping="Wrap" />
+        </Border>
+
+        <Button x:Name="Fechar" Classes="secundario" Content="Fechar" HorizontalAlignment="Right" IsCancel="True" IsDefault="True" />
+    </StackPanel>
+</Window>

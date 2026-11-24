@@ -83,6 +83,22 @@
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
     </Style>
 
+    <!-- Cobertura de folga: funcionário de outra filial (filial extra) -->
+    <Style Selector="Border.func.cobertura">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+    <Style Selector="Border.func.leitura.cobertura:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+    <!-- Cobertura de folga no topo do dia da escala semanal, logo abaixo do expediente -->
+    <Style Selector="Border.coberturaDia">
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="0,0,0,8" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
     <Style Selector="Border.disponiveis">
         <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
         <Setter Property="BorderThickness" Value="0,1,0,0" />
@@ -104,5 +120,72 @@
         <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
         <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
         <Setter Property="Padding" Value="10,4" />
+    </Style>
+
+    <!-- Funcionário clicável no calendário (abre as horas da semana) -->
+    <Style Selector="Border.func.leitura.clicavel">
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Border.func.leitura.clicavel:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+
+    <!-- Gestão de horários -->
+    <Style Selector="Button.expediente">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoPequeno}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Button.expediente:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource DestaqueBrush}" />
+    </Style>
+    <Style Selector="Button.expediente.semExpediente">
+        <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+
+    <Style Selector="TextBox.hora">
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="MinHeight" Value="32" />
+    </Style>
+
+    <Style Selector="TextBlock.semExpediente">
+        <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+    <Style Selector="Grid.horasDia.futuro">
+        <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="TextBlock.totalHoras">
+        <Setter Property="FontFamily" Value="{DynamicResource FonteTitulo}" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+    </Style>
+
+    <Style Selector="Grid.resumoCabecalho">
+        <Setter Property="Margin" Value="12,0,12,4" />
+    </Style>
+    <Style Selector="Grid.resumoFilial">
+        <Setter Property="Margin" Value="0,0,12,4" />
+    </Style>
+    <Style Selector="Border.resumoLinha">
+        <Setter Property="Background" Value="{DynamicResource SuperficieElevadaBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BordaBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource EspessuraBorda}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Raio}" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+    <Style Selector="StackPanel.celula TextBlock.intervalo">
+        <Setter Property="FontSize" Value="{DynamicResource TamanhoTextoPequeno}" />
+    </Style>
+    <Style Selector="StackPanel.celula.folga TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource DiaFechadoBrush}" />
+    </Style>
+    <Style Selector="StackPanel.celula.semExpediente TextBlock.intervalo">
+        <Setter Property="FontStyle" Value="Italic" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundarioBrush}" />
     </Style>
 </Styles>

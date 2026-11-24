@@ -1,0 +1,108 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Escalas.Desktop.ViewModels"
+        xmlns:ctl="using:Escalas.Desktop.Controls"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1180" d:DesignHeight="720"
+        x:Class="Escalas.Desktop.Views.ResumoSemanalWindow"
+        x:DataType="vm:ResumoSemanalViewModel"
+        Title="Resumo semanal"
+        Width="1180" Height="720" MinWidth="900" MinHeight="400"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+
+    <Design.DataContext>
+        <vm:ResumoSemanalViewModel />
+    </Design.DataContext>
+
+    <DockPanel Margin="{DynamicResource PaddingEspaco6}">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <StackPanel Spacing="2">
+                <TextBlock Classes="titulo" Text="Resumo semanal" />
+                <TextBlock Classes="secundario" Text="{Binding Semana}" />
+                <TextBlock Classes="secundario" Text="{Binding RegraAlmoco}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource Espaco2}" VerticalAlignment="Center">
+                <Button x:Name="Fechar" Classes="destaque" Content="Fechar" IsCancel="True" />
+            </StackPanel>
+        </Grid>
+
+        <Border DockPanel.Dock="Top" Classes="mensagem" Margin="0,0,0,12" IsVisible="{Binding TemAviso}">
+            <TextBlock Text="{Binding Aviso}" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- Cabeçalho fixo: funcionário | 7 dias | dias | total -->
+        <Grid DockPanel.Dock="Top" Classes="resumoCabecalho" ColumnDefinitions="200,*,64,64">
+            <TextBlock Classes="secundario" Text="Funcionário" />
+            <ItemsControl Grid.Column="1" ItemsSource="{Binding Cabecalho}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <TextBlock Classes="secundario" Text="{Binding}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Grid.Column="2" Classes="secundario" Text="Dias" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="3" Classes="secundario" Text="Total" HorizontalAlignment="Right" />
+        </Grid>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Filiais}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ResumoFilialItem">
+                        <StackPanel Margin="0,12,0,0">
+                            <Grid Classes="resumoFilial">
+                                <TextBlock Classes="diaTitulo" Text="{Binding Nome}" />
+                            </Grid>
+                            <TextBlock Classes="secundario" Text="Nenhum funcionário ativo." Margin="0,4,0,0" IsVisible="{Binding Vazia}" />
+                            <ItemsControl ItemsSource="{Binding Linhas}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ResumoLinhaItem">
+                                        <Border Classes="resumoLinha">
+                                            <Grid ColumnDefinitions="200,*,64,64">
+                                                <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                                                    <ctl:AvatarFuncionario Width="28" Height="28" Margin="0,0,8,0"
+                                                                           Foto="{Binding Foto}" Nome="{Binding Nome}" />
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Classes="secundario" Text="{Binding Setor}" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </Grid>
+                                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Celulas}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <UniformGrid Rows="1" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:ResumoCelulaItem">
+                                                            <StackPanel Classes="celula" Classes.folga="{Binding !Trabalha}"
+                                                                        Classes.semExpediente="{Binding SemExpediente}" VerticalAlignment="Center">
+                                                                <TextBlock Classes="intervalo" Text="{Binding Intervalo}" />
+                                                                <TextBlock Classes="secundario" Text="{Binding Horas}" />
+                                                                <TextBlock Classes="secundario" Foreground="{DynamicResource DestaqueBrush}"
+                                                                           Text="{Binding Local}" IsVisible="{Binding TemLocal}" />
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Grid.Column="2" Classes="secundario" Text="{Binding Dias}"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Total}" FontWeight="SemiBold"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
