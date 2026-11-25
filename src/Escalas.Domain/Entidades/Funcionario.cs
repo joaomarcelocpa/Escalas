@@ -15,4 +15,10 @@ public class Funcionario
     public bool Ativo { get; set; } = true;
     /// <summary>Foto já redimensionada (PNG pequeno), guardada no próprio banco.</summary>
     public byte[]? Foto { get; set; }
+    /// <summary>
+    /// Ativo: os dias com horário em <see cref="Horarios"/> usam esse horário no lugar do expediente geral.
+    /// Desativado, os horários ficam guardados mas não valem.
+    /// </summary>
+    public bool HorarioPersonalizado { get; set; }
+    public List<HorarioFuncionario> Horarios { get; set; } = [];
 }

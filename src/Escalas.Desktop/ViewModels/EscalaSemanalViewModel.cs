@@ -112,11 +112,9 @@ public partial class EscalaSemanalViewModel : ViewModelBase
         if (_servico is null || FilialSelecionada is null) return;
 
         var semana = await _servico.ObterAsync(FilialSelecionada.Id);
-        var expedientes = _expedientes is null
-            ? new Dictionary<DayOfWeek, ExpedienteDto>()
-            : (await _expedientes.ObterAsync()).ToDictionary(e => e.Dia);
+        var horarios = _expedientes is null ? TabelaHorarios.Vazia : await _expedientes.ObterTabelaAsync();
         foreach (var d in semana.Dias)
-            Dias.Add(new DiaPadraoViewModel(d, expedientes.GetValueOrDefault(d.Dia), c => _ = CobrirAsync(c)));
+            Dias.Add(new DiaPadraoViewModel(d, CalendarioViewModel.Expediente(horarios, d.Dia), c => _ = CobrirAsync(c)));
     }
 
     private async Task Aplicar(Task<ResultadoOperacao> operacao)

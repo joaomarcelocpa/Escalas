@@ -26,6 +26,12 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.13" />
   </ItemGroup>
 
+  <!-- empacotar.sh passa -p:PacoteDados=<pasta> para embutir o banco e a chave no .exe (PC da empresa: só o .exe). -->
+  <ItemGroup Condition="'$(PacoteDados)' != ''">
+    <EmbeddedResource Include="$(PacoteDados)/escalas.db" LogicalName="Escalas.Pacote.escalas.db" />
+    <EmbeddedResource Include="$(PacoteDados)/escalas.chave" LogicalName="Escalas.Pacote.escalas.chave" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Escalas.Application\Escalas.Application.csproj" />
     <ProjectReference Include="..\Escalas.Infrastructure\Escalas.Infrastructure.csproj" />

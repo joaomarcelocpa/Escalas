@@ -111,14 +111,15 @@ public partial class CalendarioViewModel : ViewModelBase
         if (_servico is null || FilialSelecionada is null) { Dias.Clear(); return; }
 
         var semana = await _servico.ObterSemanaAsync(FilialSelecionada.Id, _inicioSemana);
-        var expedientes = _expedientes is null
-            ? new Dictionary<DayOfWeek, ExpedienteDto>()
-            : (await _expedientes.ObterAsync()).ToDictionary(e => e.Dia);
+        var horarios = _expedientes is null ? TabelaHorarios.Vazia : await _expedientes.ObterTabelaAsync();
         // Troca tudo de uma vez, só depois da consulta: evita o piscar de tela vazia ao mudar de semana.
-        var novos = semana.Dias.Select(d => new DiaViewModel(d, expedientes.GetValueOrDefault(d.Data.DayOfWeek))).ToList();
+        var novos = semana.Dias.Select(d => new DiaViewModel(d, Expediente(horarios, d.Data.DayOfWeek))).ToList();
         Dias.Clear();
         foreach (var d in novos) Dias.Add(d);
     }
+
+    internal static ExpedienteDto? Expediente(TabelaHorarios horarios, DayOfWeek dia) =>
+        horarios.Geral(dia) is { } g ? new ExpedienteDto(dia, g.Inicio, g.Fim) : null;
 
     private void AtualizarTitulo()
     {

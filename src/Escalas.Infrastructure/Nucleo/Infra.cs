@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using Escalas.Application.Nucleo;
@@ -156,7 +157,35 @@ public class BackupService(CaminhosApp caminhos, BackupOpcoes opcoes) : IBackupS
     }
 }
 
-public class InicializadorBanco(CaminhosApp caminhos, IChaveStore chaves, IBackupService backup) : IInicializadorBanco
+/// <summary>Banco e chave que vieram junto com o aplicativo (dentro do .exe).</summary>
+public interface IPacoteInstalacao
+{
+    /// <summary>Conteúdo do banco embutido, ou null se este executável não traz banco.</summary>
+    Stream? AbrirBanco();
+    string? LerChave();
+}
+
+/// <summary>
+/// Lê escalas.db e escalas.chave embutidos como recurso no executável (gerado pelo empacotar.sh).
+/// Num build de desenvolvimento não há recursos e nada é importado.
+/// </summary>
+public class PacoteEmbutido(Assembly? assembly) : IPacoteInstalacao
+{
+    public const string RecursoBanco = "Escalas.Pacote.escalas.db";
+    public const string RecursoChave = "Escalas.Pacote.escalas.chave";
+
+    public Stream? AbrirBanco() => assembly?.GetManifestResourceStream(RecursoBanco);
+
+    public string? LerChave()
+    {
+        using var s = assembly?.GetManifestResourceStream(RecursoChave);
+        if (s is null) return null;
+        using var r = new StreamReader(s);
+        return r.ReadToEnd().Trim() is { Length: > 0 } chave ? chave : null;
+    }
+}
+
+public class InicializadorBanco(CaminhosApp caminhos, IChaveStore chaves, IBackupService backup, IPacoteInstalacao pacote) : IInicializadorBanco
 {
     public async Task<ResultadoInicializacao> InicializarAsync(CancellationToken ct = default)
     {
@@ -210,6 +239,7 @@ public class InicializadorBanco(CaminhosApp caminhos, IChaveStore chaves, IBacku
     private void ImportarPacoteSeNecessario()
     {
         if (File.Exists(caminhos.CaminhoBanco)) return;
+        if (ImportarPacoteEmbutido()) return;
         var bancoPacote = Path.Combine(caminhos.DiretorioPacote, CaminhosApp.NomeBancoPacote);
         if (!File.Exists(bancoPacote)) return;
         if (Path.GetFullPath(bancoPacote) == Path.GetFullPath(caminhos.CaminhoBanco)) return;
@@ -220,6 +250,34 @@ public class InicializadorBanco(CaminhosApp caminhos, IChaveStore chaves, IBacku
         if (File.Exists(chavePacote) && File.ReadAllText(chavePacote).Trim() is { Length: > 0 } chave)
             chaves.Salvar(chave);
         File.Copy(bancoPacote, caminhos.CaminhoBanco);
+    }
+
+    /// <summary>
+    /// Primeiro uso a partir do .exe único: extrai o banco embutido para a pasta de dados e guarda a chave
+    /// protegida pelo SO (DPAPI no Windows). O banco é gravado num arquivo temporário e só então renomeado,
+    /// para que uma falha no meio não deixe um banco pela metade.
+    /// </summary>
+    private bool ImportarPacoteEmbutido()
+    {
+        using var banco = pacote.AbrirBanco();
+        if (banco is null) return false;
+        var chave = pacote.LerChave()
+            ?? throw new InvalidOperationException("o executável traz o banco, mas não a chave dele.");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(caminhos.CaminhoBanco)!);
+        var temporario = caminhos.CaminhoBanco + ".importando";
+        try
+        {
+            using (var destino = File.Create(temporario)) banco.CopyTo(destino);
+            // Banco novo nesta máquina: a chave embutida é a que vale (substitui qualquer chave antiga guardada).
+            chaves.Salvar(chave);
+            File.Move(temporario, caminhos.CaminhoBanco);
+        }
+        finally
+        {
+            if (File.Exists(temporario)) File.Delete(temporario);
+        }
+        return true;
     }
 
     /// <summary>Depois que a chave foi importada, apaga a cópia em texto que veio ao lado do executável.</summary>

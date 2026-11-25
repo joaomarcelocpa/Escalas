@@ -33,6 +33,17 @@
                 </Grid>
                 <!-- Ações de rodapé (ex.: exportar backup) entram aqui -->
                 <StackPanel DockPanel.Dock="Bottom" x:Name="RodapeMenu" Spacing="{DynamicResource Espaco1}">
+                    <!-- Zoom da interface (também por Ctrl/⌘ + − / = / 0): ajusta o tamanho de tudo em monitores grandes -->
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="12,0,0,4" IsVisible="{Binding !SidebarRecolhida}">
+                        <TextBlock Classes="secundario" Text="Zoom" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Classes="alternarSidebar" Content="−" Command="{Binding DiminuirZoomCommand}"
+                                ToolTip.Tip="Diminuir (Ctrl/⌘ −)" AutomationProperties.Name="Diminuir zoom" />
+                        <Button Grid.Column="2" Classes="alternarSidebar" Content="{Binding TextoZoom}" MinWidth="48"
+                                HorizontalContentAlignment="Center" Command="{Binding RestaurarZoomCommand}"
+                                ToolTip.Tip="Voltar para 100% (Ctrl/⌘ 0)" AutomationProperties.Name="Restaurar zoom" />
+                        <Button Grid.Column="3" Classes="alternarSidebar" Content="+" Command="{Binding AumentarZoomCommand}"
+                                ToolTip.Tip="Aumentar (Ctrl/⌘ =)" AutomationProperties.Name="Aumentar zoom" />
+                    </Grid>
                     <TextBlock Classes="secundario" Text="{Binding StatusBackup}" TextWrapping="Wrap"
                                ToolTip.Tip="{Binding StatusBackup}">
                         <TextBlock.IsVisible>
@@ -72,6 +83,8 @@
             </DockPanel>
         </Border>
 
-        <ContentControl Content="{Binding PaginaAtual}" Margin="{DynamicResource PaddingEspaco6}" />
+        <!-- Largura máxima: em monitores grandes/maximizado o conteúdo fica centralizado em vez de esticar
+             (até ~1360 px nada muda, então notebooks e telas menores ficam como antes). -->
+        <ContentControl Content="{Binding PaginaAtual}" Margin="{DynamicResource PaddingEspaco6}" MaxWidth="1360" />
     </DockPanel>
 </Window>

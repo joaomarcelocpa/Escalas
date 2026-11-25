@@ -9,6 +9,6 @@ public class DialogoConfirmacao : IDialogoConfirmacao
     {
         var dono = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
         if (dono is null) return false;
-        return await new ConfirmacaoWindow(titulo, mensagem, textoConfirmar).ShowDialog<bool>(dono);
+        return await EscalaInterface.Preparar(new ConfirmacaoWindow(titulo, mensagem, textoConfirmar), dono).ShowDialog<bool>(dono);
     }
 }

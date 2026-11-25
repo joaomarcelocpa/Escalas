@@ -305,6 +305,77 @@ public class NucleoTests
         Assert.Equal("Padaria Exemplo", Assert.Single(await db.Empresas.ToListAsync()).Nome);
     }
 
+    private sealed class PacoteEmMemoria(byte[]? banco, string? chave) : IPacoteInstalacao
+    {
+        public Stream? AbrirBanco() => banco is null ? null : new MemoryStream(banco);
+        public string? LerChave() => chave;
+    }
+
+    [Fact]
+    public async Task Banco_embutido_no_exe_e_extraido_no_primeiro_uso()
+    {
+        using var amb = new AmbienteTemp();
+        var r = await CriarEmpresa(amb);
+        var pacote = new PacoteEmMemoria(await File.ReadAllBytesAsync(r.CaminhoBanco), (await File.ReadAllTextAsync(r.CaminhoChave)).Trim());
+
+        // PC da empresa: nada na pasta de dados e nenhum arquivo ao lado do executável.
+        var caminhos = amb.CaminhosCliente();
+        await using var sp = new ServiceCollection().AdicionarNucleo(caminhos, pacote: pacote).BuildServiceProvider();
+        Assert.Equal(SituacaoBanco.Pronto, (await sp.GetRequiredService<IInicializadorBanco>().InicializarAsync()).Situacao);
+
+        Assert.True(File.Exists(caminhos.CaminhoBanco));
+        Assert.False(File.Exists(caminhos.CaminhoBanco + ".importando"));
+        Assert.False(Directory.Exists(amb.Pacote));
+        Assert.Equal(pacote.LerChave(), sp.GetRequiredService<IChaveStore>().Obter());
+        var factory = sp.GetRequiredService<IDbContextFactory<EscalasDbContext>>();
+        await using (var db = await factory.CreateDbContextAsync())
+            Assert.Equal("Padaria Exemplo", Assert.Single(await db.Empresas.ToListAsync()).Nome);
+
+        // Segunda abertura: usa o banco já extraído, sem reimportar.
+        SqliteConnection.ClearAllPools();
+        var antes = File.GetLastWriteTimeUtc(caminhos.CaminhoBanco);
+        await using var sp2 = new ServiceCollection().AdicionarNucleo(caminhos, pacote: pacote).BuildServiceProvider();
+        Assert.Equal(SituacaoBanco.Pronto, (await sp2.GetRequiredService<IInicializadorBanco>().InicializarAsync()).Situacao);
+        Assert.Equal(antes, File.GetLastWriteTimeUtc(caminhos.CaminhoBanco));
+    }
+
+    [Fact]
+    public async Task Banco_embutido_nao_sobrescreve_banco_ja_instalado()
+    {
+        using var amb = new AmbienteTemp();
+        var r = await CriarEmpresa(amb);
+        Entregar(amb, r);
+        var original = await File.ReadAllBytesAsync(Path.Combine(amb.Dados, "escalas.db"));
+        var pacote = new PacoteEmMemoria("outro banco"u8.ToArray(), BancoFabrica.GerarChave());
+
+        await using var sp = new ServiceCollection().AdicionarNucleo(amb.CaminhosCliente(), pacote: pacote).BuildServiceProvider();
+        Assert.Equal(SituacaoBanco.Pronto, (await sp.GetRequiredService<IInicializadorBanco>().InicializarAsync()).Situacao);
+        Assert.Equal(original, await File.ReadAllBytesAsync(Path.Combine(amb.Dados, "escalas.db")));
+        Assert.NotEqual(pacote.LerChave(), sp.GetRequiredService<IChaveStore>().Obter());
+    }
+
+    [Fact]
+    public async Task Banco_embutido_sem_chave_informa_erro_e_nao_instala()
+    {
+        using var amb = new AmbienteTemp();
+        var r = await CriarEmpresa(amb);
+        var pacote = new PacoteEmMemoria(await File.ReadAllBytesAsync(r.CaminhoBanco), null);
+        var caminhos = amb.CaminhosCliente();
+
+        await using var sp = new ServiceCollection().AdicionarNucleo(caminhos, pacote: pacote).BuildServiceProvider();
+        Assert.Equal(SituacaoBanco.Erro, (await sp.GetRequiredService<IInicializadorBanco>().InicializarAsync()).Situacao);
+        Assert.False(File.Exists(caminhos.CaminhoBanco));
+    }
+
+    [Fact]
+    public void Executavel_sem_recursos_nao_traz_pacote()
+    {
+        var pacote = new PacoteEmbutido(typeof(NucleoTests).Assembly);
+        Assert.Null(pacote.AbrirBanco());
+        Assert.Null(pacote.LerChave());
+        Assert.Null(new PacoteEmbutido(null).AbrirBanco());
+    }
+
     [Fact]
     public async Task Pacote_nao_sobrescreve_banco_ja_instalado()
     {

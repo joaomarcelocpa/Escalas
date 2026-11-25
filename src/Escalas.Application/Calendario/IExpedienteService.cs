@@ -1,3 +1,5 @@
+using Escalas.Domain.Calendario;
+
 namespace Escalas.Application.Calendario;
 
 public record ExpedienteDto(DayOfWeek Dia, TimeOnly Inicio, TimeOnly Fim);
@@ -12,5 +14,11 @@ public interface IExpedienteService
     Task<IReadOnlyList<ExpedienteDto>> ObterAsync(CancellationToken ct = default);
 
     /// <summary>Grava vários dias de uma vez; se algum for inválido, nada é gravado.</summary>
+    /// <summary>
+    /// Expediente geral junto com os horários personalizados dos funcionários que têm a opção ativa:
+    /// é o que vale para calcular as horas de cada um.
+    /// </summary>
+    Task<TabelaHorarios> ObterTabelaAsync(CancellationToken ct = default);
+
     Task<ResultadoOperacao> SalvarAsync(IReadOnlyList<ExpedienteEntrada> dias, CancellationToken ct = default);
 }

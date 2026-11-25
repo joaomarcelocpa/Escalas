@@ -7,7 +7,16 @@ namespace Escalas.Desktop.Servicos;
 public interface IPreferenciasUi
 {
     bool SidebarRecolhida { get; set; }
+
+    /// <summary>Zoom da interface (1 = 100%).</summary>
+    double Zoom { get; set; }
+
+    /// <summary>Último tamanho/posição da janela principal; null até o app ser fechado uma vez.</summary>
+    GeometriaJanela? Janela { get; set; }
 }
+
+/// <summary>Tamanho (unidades lógicas) e posição (pixels da tela) da janela principal.</summary>
+public sealed record GeometriaJanela(int X, int Y, double Largura, double Altura, bool Maximizada);
 
 public sealed class PreferenciasUi : IPreferenciasUi
 {
@@ -29,6 +38,28 @@ public sealed class PreferenciasUi : IPreferenciasUi
         {
             if (_dados.SidebarRecolhida == value) return;
             _dados = _dados with { SidebarRecolhida = value };
+            Salvar();
+        }
+    }
+
+    public double Zoom
+    {
+        get => _dados.Zoom;
+        set
+        {
+            if (Math.Abs(_dados.Zoom - value) < 0.001) return;
+            _dados = _dados with { Zoom = value };
+            Salvar();
+        }
+    }
+
+    public GeometriaJanela? Janela
+    {
+        get => _dados.Janela;
+        set
+        {
+            if (_dados.Janela == value) return;
+            _dados = _dados with { Janela = value };
             Salvar();
         }
     }
@@ -63,5 +94,7 @@ public sealed class PreferenciasUi : IPreferenciasUi
     private sealed record Dados
     {
         public bool SidebarRecolhida { get; init; }
+        public double Zoom { get; init; } = 1;
+        public GeometriaJanela? Janela { get; init; }
     }
 }

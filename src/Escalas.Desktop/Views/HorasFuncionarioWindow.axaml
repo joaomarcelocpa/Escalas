@@ -46,6 +46,8 @@
                                                Text="{Binding Intervalo}" HorizontalAlignment="Right" />
                                     <TextBlock Classes="secundario" Text="{Binding Almoco}" HorizontalAlignment="Right"
                                                IsVisible="{Binding TemAlmoco}" />
+                                    <TextBlock Classes="secundario" Text="Horário personalizado" HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource DestaqueBrush}" IsVisible="{Binding Personalizado}" />
                                 </StackPanel>
                                 <TextBlock Grid.Column="2" Text="{Binding Horas}" FontWeight="SemiBold"
                                            HorizontalAlignment="Right" VerticalAlignment="Center" />

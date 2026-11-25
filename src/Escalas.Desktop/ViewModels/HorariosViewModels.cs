@@ -44,9 +44,16 @@ internal static class TextoHorario
 /// <summary>Uma linha do diálogo de expediente: horas digitadas como texto ("08:00").</summary>
 public partial class ExpedienteDiaItem : ObservableObject
 {
-    public ExpedienteDiaItem(DayOfWeek dia, ExpedienteDto? atual)
+    private readonly string _textoVazio;
+
+    /// <param name="textoVazio">Prévia quando os dois campos estão vazios.</param>
+    /// <param name="padrao">Horário sugerido (placeholder) quando vazio; por padrão "08:00" e "18:00".</param>
+    public ExpedienteDiaItem(DayOfWeek dia, ExpedienteDto? atual, string textoVazio = "Sem expediente", HorarioDia? padrao = null)
     {
         Dia = dia;
+        _textoVazio = textoVazio;
+        PlaceholderInicio = padrao is null ? "08:00" : TextoHorario.Hora(padrao.Inicio);
+        PlaceholderFim = padrao is null ? "18:00" : TextoHorario.Hora(padrao.Fim);
         Titulo = TextoHorario.DiasLongos[(int)dia];
         Inicio = atual is null ? "" : TextoHorario.Hora(atual.Inicio);
         Fim = atual is null ? "" : TextoHorario.Hora(atual.Fim);
@@ -54,6 +61,8 @@ public partial class ExpedienteDiaItem : ObservableObject
 
     public DayOfWeek Dia { get; }
     public string Titulo { get; }
+    public string PlaceholderInicio { get; }
+    public string PlaceholderFim { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Duracao))]
@@ -65,7 +74,7 @@ public partial class ExpedienteDiaItem : ObservableObject
 
     /// <summary>Prévia das horas do dia, ou orientação quando incompleto/inválido.</summary>
     public string Duracao => Ler(out var entrada, out var erro)
-        ? entrada.Inicio is { } i && entrada.Fim is { } f ? RegraHoras.FormatarHorasDoDia(i, f) : "Sem expediente"
+        ? entrada.Inicio is { } i && entrada.Fim is { } f ? RegraHoras.FormatarHorasDoDia(i, f) : _textoVazio
         : erro!;
 
     public void Limpar() => (Inicio, Fim) = ("", "");
@@ -161,7 +170,9 @@ public partial class ExpedienteSemanaViewModel : ViewModelBase
 /// <param name="Intervalo">"08:00–17:00" ou "Sem expediente".</param>
 /// <param name="Almoco">"−1h30 almoço" quando o almoço foi descontado; vazio caso contrário.</param>
 /// <param name="Local">"Cobre Interiores" no dia de cobertura de folga; vazio na própria filial.</param>
-public record HorasDiaItem(string Dia, string Data, string Intervalo, string Horas, bool SemExpediente, bool Futuro, string Almoco = "", string Local = "")
+/// <param name="Personalizado">O horário do dia é o personalizado do funcionário (não o expediente geral).</param>
+public record HorasDiaItem(string Dia, string Data, string Intervalo, string Horas, bool SemExpediente, bool Futuro, string Almoco = "", string Local = "",
+    bool Personalizado = false)
 {
     public bool TemAlmoco => Almoco.Length > 0;
     public bool TemLocal => Local.Length > 0;
@@ -188,7 +199,9 @@ public class HorasFuncionarioViewModel : ViewModelBase
             !d.TemExpediente,
             d.Data > hoje,
             d.DescontaAlmoco ? TextoHorario.Almoco : "",
-            d.Cobertura is { } c ? $"Cobre {Filiais.Nome(c)}" : "")).ToList();
+            d.Cobertura is { } c ? $"Cobre {Filiais.Nome(c)}" : "",
+            d.Personalizado)).ToList();
+        TemPersonalizado = dto.Dias.Any(d => d.Personalizado);
         TotalSemana = RegraHoras.Formatar(dto.Totais.Total);
         TotalAteHoje = RegraHoras.Formatar(dto.Totais.AteHoje);
         TextoDias = dto.Totais.Dias == 1 ? "1 dia escalado" : $"{dto.Totais.Dias} dias escalados";
@@ -206,6 +219,8 @@ public class HorasFuncionarioViewModel : ViewModelBase
     public string TotalAteHoje { get; }
     public string? Aviso { get; }
     public bool TemAviso => Aviso is not null;
+    /// <summary>Algum dia da semana usa o horário personalizado do funcionário.</summary>
+    public bool TemPersonalizado { get; }
 }
 
 // ───────────── Resumo semanal de todos, por filial ─────────────

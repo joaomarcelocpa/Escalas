@@ -8,7 +8,7 @@
     <DockPanel>
         <TextBlock DockPanel.Dock="Top" Classes="titulo" Text="Funcionários" Margin="0,0,0,16" />
 
-        <Grid ColumnDefinitions="*,24,280">
+        <Grid ColumnDefinitions="*,24,340">
             <ListBox Classes="cartoes" ItemsSource="{Binding Itens}" SelectedItem="{Binding Selecionado}">
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="ent:Funcionario">
@@ -21,7 +21,8 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <StackPanel Grid.Column="2" Classes="formulario">
+            <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Classes="formulario" Margin="0,0,12,0">
                 <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
                     <ctl:AvatarFuncionario Width="56" Height="56" Foto="{Binding Foto}" Nome="{Binding Nome}" />
                     <StackPanel VerticalAlignment="Center" Spacing="4">
@@ -57,6 +58,30 @@
                 </ComboBox>
                 <TextBlock Classes="secundario" TextWrapping="Wrap" Margin="0,4,0,0"
                            Text="Pode cobrir a folga dos funcionários fixos dessa filial. A cobertura é escolhida na Escala semanal." />
+                <CheckBox Margin="0,12,0,0" Content="Horário de trabalho personalizado" IsChecked="{Binding HorarioPersonalizado}" />
+                <StackPanel IsVisible="{Binding HorarioPersonalizado}" Spacing="6" Margin="0,4,0,0">
+                    <TextBlock Classes="secundario" TextWrapping="Wrap"
+                               Text="Horário próprio deste funcionário em cada dia. Dia vazio segue o expediente geral. As folgas continuam na Escala semanal." />
+                    <ItemsControl ItemsSource="{Binding HorariosDias}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ExpedienteDiaItem">
+                                <Grid ColumnDefinitions="64,*,24,*,Auto" RowDefinitions="Auto,Auto" Margin="0,0,0,6">
+                                    <TextBlock Grid.Column="0" Text="{Binding Titulo}" VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1" Classes="hora" Text="{Binding Inicio}" PlaceholderText="{Binding PlaceholderInicio}" />
+                                    <TextBlock Grid.Column="2" Classes="secundario" Text="às" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="3" Classes="hora" Text="{Binding Fim}" PlaceholderText="{Binding PlaceholderFim}" />
+                                    <Button Grid.Column="4" Classes="link" Content="×" ToolTip.Tip="Usar o expediente geral neste dia"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding $parent[UserControl].((vm:FuncionariosViewModel)DataContext).LimparHorarioDiaCommand}"
+                                            CommandParameter="{Binding}" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" Classes="secundario"
+                                               Text="{Binding Duracao}" Margin="0,2,0,0" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Classes="link" Content="Repetir o primeiro horário nos outros dias" Command="{Binding RepetirPrimeiroHorarioCommand}" />
+                </StackPanel>
                 <CheckBox Margin="0,12,0,0" Content="Ativo" IsChecked="{Binding Ativo}" />
                 <StackPanel Classes="acoes">
                     <Button Classes="destaque" Content="Salvar" Command="{Binding SalvarCommand}" />
@@ -66,6 +91,7 @@
                     <TextBlock Text="{Binding Erro}" TextWrapping="Wrap" />
                 </Border>
             </StackPanel>
+            </ScrollViewer>
         </Grid>
     </DockPanel>
 </UserControl>

@@ -8,7 +8,7 @@ namespace Escalas.Infrastructure.Calendario;
 
 /// <summary>
 /// Junta quem está escalado em cada dia (mesma regra do calendário: modelo semanal, exceções, dias fechados e feriados)
-/// com o expediente geral do dia da semana (definido na escala semanal).
+/// com o horário que vale para o funcionário no dia: o personalizado dele, se houver, ou o expediente geral do dia da semana.
 /// </summary>
 public class HorasService(
     IDbContextFactory<EscalasDbContext> factory,
@@ -27,7 +27,7 @@ public class HorasService(
         if (filialVista is { } vista && vista != func.Filial && vista == func.FilialExtra)
         {
             var coberta = await escalas.ObterSemanaAsync(vista, qualquerDiaDaSemana, ct);
-            return MontarCobertura(func, coberta, await ObterExpedientesAsync(ct));
+            return MontarCobertura(func, coberta, await expedientes.ObterTabelaAsync(ct));
         }
 
         // Própria filial e, se houver, a filial extra (dias em que cobre folga lá também contam horas).
@@ -37,13 +37,13 @@ public class HorasService(
         };
         if (func.FilialExtra is { } extra && extra != func.Filial)
             semanas[extra] = await escalas.ObterSemanaAsync(extra, qualquerDiaDaSemana, ct);
-        return Montar(func, semanas, await ObterExpedientesAsync(ct));
+        return Montar(func, semanas, await expedientes.ObterTabelaAsync(ct));
     }
 
     public async Task<ResumoSemanalDto> ObterResumoAsync(DateOnly qualquerDiaDaSemana, CancellationToken ct = default)
     {
         var inicio = RegraEscala.InicioDaSemana(qualquerDiaDaSemana);
-        var expedientesSemana = await ObterExpedientesAsync(ct);
+        var horarios = await expedientes.ObterTabelaAsync(ct);
 
         List<Funcionario> ativos;
         await using (var db = await factory.CreateDbContextAsync(ct))
@@ -60,7 +60,7 @@ public class HorasService(
             // Todos os ativos da filial aparecem, mesmo sem dia escalado. Quem cobre folga em outra filial aparece só aqui,
             // na filial de origem, com o dia de cobertura marcado (a filial coberta não lista o cobridor).
             var linhas = ativos.Where(f => f.Filial == filial.Id)
-                .Select(f => Montar(f, semanas, expedientesSemana))
+                .Select(f => Montar(f, semanas, horarios))
                 .ToList();
             filiais.Add(new ResumoFilialDto(filial.Id, filial.Nome, linhas));
         }
@@ -71,16 +71,8 @@ public class HorasService(
         return new ResumoSemanalDto(inicio, filiais, semExpediente);
     }
 
-    private async Task<Dictionary<DayOfWeek, ExpedienteDto>> ObterExpedientesAsync(CancellationToken ct) =>
-        (await expedientes.ObterAsync(ct)).ToDictionary(e => e.Dia);
-
-    private static DiaEscalado Dia(DateOnly data, Dictionary<DayOfWeek, ExpedienteDto> expedientesSemana, Filial? cobertura = null) =>
-        expedientesSemana.TryGetValue(data.DayOfWeek, out var e)
-            ? new DiaEscalado(data, e.Inicio, e.Fim, cobertura)
-            : new DiaEscalado(data, null, null, cobertura);
-
     /// <summary>Dias da semana em que o funcionário trabalha: na própria filial ou cobrindo a filial extra.</summary>
-    private HorasFuncionarioDto Montar(Funcionario func, IReadOnlyDictionary<Filial, SemanaDto> semanas, Dictionary<DayOfWeek, ExpedienteDto> expedientesSemana)
+    private HorasFuncionarioDto Montar(Funcionario func, IReadOnlyDictionary<Filial, SemanaDto> semanas, TabelaHorarios horarios)
     {
         var propria = semanas[func.Filial];
         SemanaDto? extra = func.FilialExtra is { } fe && fe != func.Filial ? semanas.GetValueOrDefault(fe) : null;
@@ -89,18 +81,18 @@ public class HorasService(
         {
             var d = propria.Dias[i];
             if (d.Setores.Any(s => s.Escalados.Any(f => f.Id == func.Id)))
-                dias.Add(Dia(d.Data, expedientesSemana));
+                dias.Add(horarios.Dia(func.Id, d.Data));
             else if (extra?.Dias.FirstOrDefault(x => x.Data == d.Data) is { } coberto && coberto.Cobrindo.Any(f => f.Id == func.Id))
-                dias.Add(Dia(d.Data, expedientesSemana, extra.Filial));
+                dias.Add(horarios.Dia(func.Id, d.Data, extra.Filial));
         }
         return Criar(func, propria.Inicio, dias);
     }
 
     /// <summary>Só os dias em que o funcionário cobre a filial desta semana.</summary>
-    private HorasFuncionarioDto MontarCobertura(Funcionario func, SemanaDto coberta, Dictionary<DayOfWeek, ExpedienteDto> expedientesSemana)
+    private HorasFuncionarioDto MontarCobertura(Funcionario func, SemanaDto coberta, TabelaHorarios horarios)
     {
         var dias = coberta.Dias.Where(d => d.Cobrindo.Any(f => f.Id == func.Id))
-            .Select(d => Dia(d.Data, expedientesSemana, coberta.Filial)).ToList();
+            .Select(d => horarios.Dia(func.Id, d.Data, coberta.Filial)).ToList();
         return Criar(func, coberta.Inicio, dias);
     }
 

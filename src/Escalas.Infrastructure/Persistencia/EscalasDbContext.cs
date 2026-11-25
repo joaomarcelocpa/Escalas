@@ -13,6 +13,7 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
     public DbSet<EscalaPadrao> EscalasPadrao => Set<EscalaPadrao>();
     public DbSet<Feriado> Feriados => Set<Feriado>();
     public DbSet<Expediente> Expedientes => Set<Expediente>();
+    public DbSet<HorarioFuncionario> HorariosFuncionario => Set<HorarioFuncionario>();
 
     /// <summary>
     /// Filiais são fixas (enum <see cref="Filial"/>), gravadas como número na coluna "Filial".
@@ -38,6 +39,13 @@ public class EscalasDbContext(DbContextOptions<EscalasDbContext> options) : DbCo
             e.HasIndex(x => x.Filial);
             e.HasOne(x => x.Setor).WithMany().HasForeignKey(x => x.SetorId).OnDelete(DeleteBehavior.Restrict);
             e.Property(x => x.Nome).IsRequired();
+            e.HasMany(x => x.Horarios).WithOne().HasForeignKey(h => h.FuncionarioId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<HorarioFuncionario>(e =>
+        {
+            e.ToTable("HorariosFuncionario");
+            e.HasIndex(x => new { x.FuncionarioId, x.DiaSemana }).IsUnique();
         });
 
         b.Entity<DiaFilial>(e =>

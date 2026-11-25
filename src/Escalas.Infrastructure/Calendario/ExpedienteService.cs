@@ -19,6 +19,20 @@ public class ExpedienteService(IDbContextFactory<EscalasDbContext> factory) : IE
             .ToList();
     }
 
+    public async Task<TabelaHorarios> ObterTabelaAsync(CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+        var geral = (await db.Expedientes.AsNoTracking().ToListAsync(ct))
+            .ToDictionary(e => e.DiaSemana, e => new HorarioDia(e.Inicio, e.Fim));
+        var linhas = await db.HorariosFuncionario.AsNoTracking()
+            .Where(h => db.Funcionarios.Any(f => f.Id == h.FuncionarioId && f.HorarioPersonalizado))
+            .ToListAsync(ct);
+        var personalizados = linhas.GroupBy(h => h.FuncionarioId).ToDictionary(
+            g => g.Key,
+            g => (IReadOnlyDictionary<DayOfWeek, HorarioDia>)g.ToDictionary(h => h.DiaSemana, h => new HorarioDia(h.Inicio, h.Fim)));
+        return new TabelaHorarios(geral, personalizados);
+    }
+
     public async Task<ResultadoOperacao> SalvarAsync(IReadOnlyList<ExpedienteEntrada> dias, CancellationToken ct = default)
     {
         foreach (var d in dias)

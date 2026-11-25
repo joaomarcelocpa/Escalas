@@ -41,9 +41,17 @@ public partial class App : Avalonia.Application
             var inicializacao = Task.Run(() => sp.GetRequiredService<IInicializadorBanco>().InicializarAsync()).GetAwaiter().GetResult();
             var bancoPronto = inicializacao.Situacao == SituacaoBanco.Pronto;
 
-            desktop.MainWindow = bancoPronto
-                ? new MainWindow { DataContext = sp.GetRequiredService<MainViewModel>() }
-                : new AvisoBancoWindow(inicializacao.Mensagem ?? "Não foi possível abrir o banco de dados.");
+            if (bancoPronto)
+            {
+                // O ViewModel aplica o zoom salvo antes de a janela ser preparada.
+                var principal = new MainWindow { DataContext = sp.GetRequiredService<MainViewModel>() };
+                JanelaPrincipal.Configurar(principal, sp.GetRequiredService<IPreferenciasUi>());
+                desktop.MainWindow = EscalaInterface.Preparar(principal, ajustarTamanho: false);
+            }
+            else
+            {
+                desktop.MainWindow = new AvisoBancoWindow(inicializacao.Mensagem ?? "Não foi possível abrir o banco de dados.");
+            }
 
             // Backup automático ao fechar o app (só se o banco chegou a ser aberto).
             desktop.Exit += (_, _) =>

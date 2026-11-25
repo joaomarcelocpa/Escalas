@@ -14,7 +14,7 @@
             <Color x:Key="TextoSecundarioCor">#5B6B85</Color>
             <!-- Única cor de destaque -->
             <Color x:Key="DestaqueCor">#1558B8</Color>
-            <Color x:Key="HojeFundoCor">#FFF4D1</Color>
+            <Color x:Key="HojeFundoCor">#DBEAFE</Color>
             <Color x:Key="MarcaProfundaCor">#0A3A86</Color>
             <Color x:Key="AmareloCor">#FFB81C</Color>
             <Color x:Key="MenuTextoCor">#CFDCF5</Color>

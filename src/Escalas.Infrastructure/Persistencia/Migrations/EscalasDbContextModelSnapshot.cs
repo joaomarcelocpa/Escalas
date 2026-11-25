@@ -182,6 +182,9 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.Property<byte[]>("Foto")
                         .HasColumnType("BLOB");
 
+                    b.Property<bool>("HorarioPersonalizado")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -196,6 +199,32 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                     b.HasIndex("SetorId");
 
                     b.ToTable("Funcionarios");
+                });
+
+            modelBuilder.Entity("Escalas.Domain.Entidades.HorarioFuncionario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DiaSemana")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<TimeOnly>("Fim")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FuncionarioId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<TimeOnly>("Inicio")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FuncionarioId", "DiaSemana")
+                        .IsUnique();
+
+                    b.ToTable("HorariosFuncionario", (string)null);
                 });
 
             modelBuilder.Entity("Escalas.Domain.Entidades.Setor", b =>
@@ -252,6 +281,20 @@ namespace Escalas.Infrastructure.Persistencia.Migrations
                         .IsRequired();
 
                     b.Navigation("Setor");
+                });
+
+            modelBuilder.Entity("Escalas.Domain.Entidades.HorarioFuncionario", b =>
+                {
+                    b.HasOne("Escalas.Domain.Entidades.Funcionario", null)
+                        .WithMany("Horarios")
+                        .HasForeignKey("FuncionarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Escalas.Domain.Entidades.Funcionario", b =>
+                {
+                    b.Navigation("Horarios");
                 });
 #pragma warning restore 612, 618
         }

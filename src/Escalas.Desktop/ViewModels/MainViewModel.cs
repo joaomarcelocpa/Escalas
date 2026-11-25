@@ -47,6 +47,12 @@ public partial class MainViewModel : ViewModelBase
         _preferencias = preferencias;
         Menu = menu;
         SidebarRecolhida = preferencias.SidebarRecolhida;
+        EscalaInterface.Definir(preferencias.Zoom);
+        EscalaInterface.Mudou += () =>
+        {
+            preferencias.Zoom = EscalaInterface.Atual;
+            OnPropertyChanged(nameof(TextoZoom));
+        };
         if (menu.Count > 0) Navegar(menu[0]);
     }
 
@@ -69,6 +75,18 @@ public partial class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(IconeAlternarSidebar));
         OnPropertyChanged(nameof(DicaAlternarSidebar));
     }
+
+    /// <summary>Zoom atual da interface, ex.: "90%".</summary>
+    public string TextoZoom => EscalaInterface.Texto;
+
+    [RelayCommand]
+    private void DiminuirZoom() => EscalaInterface.Diminuir();
+
+    [RelayCommand]
+    private void AumentarZoom() => EscalaInterface.Aumentar();
+
+    [RelayCommand]
+    private void RestaurarZoom() => EscalaInterface.Restaurar();
 
     [RelayCommand]
     private void AlternarSidebar() => SidebarRecolhida = !SidebarRecolhida;

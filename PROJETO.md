@@ -135,7 +135,7 @@ Objetivo: profissional, minimalista, **sem aparência genérica ou de template**
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
     -p:EnableCompressionInSingleFile=true
   ```
-- Entrega ao cliente: `./empacotar.sh` gera `saida/Escalas-pacote.zip` com o executável, o banco atual (`escalas.db`) e a chave (`escalas.chave`). No PC da empresa basta descompactar e abrir o `.exe`: no primeiro uso o app copia o banco para a pasta de dados, guarda a chave protegida pelo Windows (DPAPI) e apaga o `escalas.chave` da pasta do pacote. Se já houver banco na pasta de dados, o pacote é ignorado (nunca sobrescreve).
+- Entrega ao cliente: `./empacotar.sh` gera um único arquivo, `saida/Escalas.exe`, com o banco atual (`escalas.db`) e a chave embutidos como recursos. No PC da empresa fica só o `.exe` (sem pasta nem arquivos soltos): no primeiro uso o app extrai o banco para `%AppData%\Escalas`, guarda a chave protegida pelo Windows (DPAPI) e passa a usar esses dados. Se já houver banco na pasta de dados, o conteúdo embutido é ignorado (nunca sobrescreve). Limitação: a chave embutida pode ser extraída por quem tiver o `.exe`, então o arquivo deve ser tratado como confidencial. O formato antigo (`escalas.db`/`escalas.chave` ao lado do executável) continua sendo aceito.
 - Dados e configurações ficam em `%AppData%/Escalas` (ou equivalente em cada sistema), nunca dentro do executável.
 - Manter o código livre de dependências específicas de Windows, para publicar depois em Linux (`linux-x64`) e macOS (`osx-arm64`, `osx-x64`).
 - Futuro: instalador e atualização automática com Velopack; assinatura de código para evitar alerta do SmartScreen.

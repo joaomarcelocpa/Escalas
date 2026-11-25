@@ -4,9 +4,10 @@ using Escalas.Domain.Entidades;
 
 namespace Escalas.Domain.Calendario;
 
-/// <summary>Dia em que o funcionário está escalado, com o expediente daquela data (nulo se não cadastrado).</summary>
+/// <summary>Dia em que o funcionário está escalado, com o horário daquela data (nulo se não cadastrado).</summary>
 /// <param name="Cobertura">Filial coberta neste dia (folga de outra filial); nulo quando trabalha na própria filial.</param>
-public record DiaEscalado(DateOnly Data, TimeOnly? Inicio, TimeOnly? Fim, Filial? Cobertura = null)
+/// <param name="Personalizado">O horário é o personalizado do funcionário, não o expediente geral do dia.</param>
+public record DiaEscalado(DateOnly Data, TimeOnly? Inicio, TimeOnly? Fim, Filial? Cobertura = null, bool Personalizado = false)
 {
     public bool TemExpediente => Inicio is not null && Fim is not null;
 

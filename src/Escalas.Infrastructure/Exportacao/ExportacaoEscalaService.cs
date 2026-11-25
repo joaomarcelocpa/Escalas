@@ -7,7 +7,7 @@ namespace Escalas.Infrastructure.Exportacao;
 
 /// <summary>
 /// Gera a planilha da escala semanal: uma aba por filial, uma linha por funcionário ativo e uma coluna por dia
-/// (segunda a sábado). A célula traz o horário do expediente nos dias em que o funcionário trabalha e "Descanso" nos demais.
+/// (segunda a sábado). A célula traz o horário do funcionário (o personalizado dele, ou o expediente geral) nos dias em que o funcionário trabalha e "Descanso" nos demais.
 /// A última coluna soma as horas da semana, já sem o almoço (regra de <see cref="RegraHoras"/>).
 /// Cobertura de folga: o funcionário aparece só na aba da filial dele; o dia coberto mostra o horário e a filial coberta
 /// (e conta horas). A aba da filial coberta não lista quem veio cobrir.
@@ -22,21 +22,21 @@ public class ExportacaoEscalaService(IEscalaPadraoService escalas, IExpedienteSe
 
     public async Task<byte[]> GerarPlanilhaAsync(CancellationToken ct = default)
     {
-        var expediente = (await expedientes.ObterAsync(ct)).ToDictionary(e => e.Dia);
+        var horarios = await expedientes.ObterTabelaAsync(ct);
 
         using var wb = new XLWorkbook();
         foreach (var filial in Filiais.Todas)
-            MontarAba(wb.Worksheets.Add(filial.Nome), await escalas.ObterAsync(filial.Id, ct), expediente);
+            MontarAba(wb.Worksheets.Add(filial.Nome), await escalas.ObterAsync(filial.Id, ct), horarios);
 
         using var saida = new MemoryStream();
         wb.SaveAs(saida);
         return saida.ToArray();
     }
 
-    /// <summary>Horário do expediente do dia (somando as horas) ou "Escalado" se o dia não tem expediente.</summary>
-    private static string Trabalho(DayOfWeek dia, IReadOnlyDictionary<DayOfWeek, ExpedienteDto> expediente, ref TimeSpan horas)
+    /// <summary>Horário do funcionário no dia (somando as horas) ou "Escalado" se o dia não tem horário.</summary>
+    private static string Trabalho(int funcionarioId, DayOfWeek dia, TabelaHorarios horarios, ref TimeSpan horas)
     {
-        if (!expediente.TryGetValue(dia, out var e)) return EscaladoSemHorario;
+        if (horarios.Do(funcionarioId, dia) is not { } e) return EscaladoSemHorario;
         horas += RegraHoras.HorasTrabalhadas(e.Inicio, e.Fim);
         return RegraHoras.FormatarIntervalo(e.Inicio, e.Fim);
     }
@@ -51,7 +51,7 @@ public class ExportacaoEscalaService(IEscalaPadraoService escalas, IExpedienteSe
         celula.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
     }
 
-    private static void MontarAba(IXLWorksheet ws, SemanaPadraoDto semana, IReadOnlyDictionary<DayOfWeek, ExpedienteDto> expediente)
+    private static void MontarAba(IXLWorksheet ws, SemanaPadraoDto semana, TabelaHorarios horarios)
     {
         var dias = semana.Dias;
         var ultimaColunaDia = ColunaPrimeiroDia + dias.Count - 1;
@@ -85,7 +85,7 @@ public class ExportacaoEscalaService(IEscalaPadraoService escalas, IExpedienteSe
                     celula.Value = Descanso;
                     continue;
                 }
-                var texto = Trabalho(dias[i].Dia, expediente, ref horas);
+                var texto = Trabalho(f.Id, dias[i].Dia, horarios, ref horas);
                 celula.Value = coberta is { } c ? $"{texto} · {Filiais.Nome(c)}" : texto;
             }
             Total(ws.Cell(linha, colunaHoras), horas);
